@@ -1,0 +1,3 @@
+*** Test Case ***
+Foo
+    Click Element    xpath://xxx

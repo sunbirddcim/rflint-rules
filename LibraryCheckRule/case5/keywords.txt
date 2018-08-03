@@ -1,0 +1,6 @@
+*** Keywords ***
+Action
+    Log    123
+
+Action 2
+    Action

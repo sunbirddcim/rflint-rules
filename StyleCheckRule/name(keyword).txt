@@ -1,0 +1,12 @@
+*** Keywords ***
+hello World
+    Foo
+
+Hello World
+    Foo
+
+Hello world
+    Foo
+
+HelloWorld
+    Foo

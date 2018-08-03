@@ -1,0 +1,3 @@
+*** Keywords ***
+Foo
+    [Teardown]    Unselect Frame

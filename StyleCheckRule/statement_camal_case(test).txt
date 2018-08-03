@@ -1,0 +1,7 @@
+*** Test Case ***
+Foo
+    Hi
+    hi
+    hello World
+    Hello World
+    Hello world

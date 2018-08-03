@@ -1,0 +1,11 @@
+*** Keywords ***
+Action
+    Wait Until Element Contains    xpath://xxx
+    Wait Until Element Does Not Contain    xpath://xxx
+    Wait Until Element Is Enabled    xpath://xxx
+    Wait Until Element Is Not Visible    xpath://xxx
+    Wait Until Element Is Visible    xpath://xxx
+    Wait Until Page Contains    xpath://xxx
+    Wait Until Page Contains Element    xpath://xxx
+    Wait Until Page Does Not Contain    xpath://xxx
+    Wait Until Page Does Not Contain Element    xpath://xxx

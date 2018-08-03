@@ -1,0 +1,3 @@
+*** Keywords ***
+Foo
+    Click Element    xpath://xxx
