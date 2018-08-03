@@ -8,6 +8,8 @@ def check(self, obj, statement):
         elif is_wait_until_keyword(statement):
             if not any([token.startswith('timeout') for token in statement[2:]]):
                 self.report(obj, 'Missing timeout argument?', statement.startline)
+        elif statement[1].lower() == 'sleep':
+            self.report(obj, 'DO NOT USE SLEEP!', statement.startline)
 
 def check_missing_waiting(self, obj, statements):
     previous = ['']
@@ -65,7 +67,7 @@ def is_action_on_element(statement):
             'press key',
             'select all from list',
             'select checkbox',
-            # 'select frame',
+            'select frame',
             'select from list',
             'select from list by index',
             'select from list by label',
