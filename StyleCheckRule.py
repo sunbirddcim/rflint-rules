@@ -20,7 +20,7 @@ def style_check(self, obj, statement):
             if not last_variable.endswith('='):
                 self.report(obj, 'Add an assignment operator `=` after the variable', statement.startline)
             if last_variable.endswith('}='):
-                self.report(obj, 'Add a apace between the variable and `=`', statement.startline)
+                self.report(obj, 'Add a space between the variable and `=`', statement.startline)
 
 def extract_name(statement):
     """

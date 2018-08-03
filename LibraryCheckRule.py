@@ -4,6 +4,7 @@ from rflint import RobotFactory, Keyword, Testcase, SuiteFile
 from pathlib import PureWindowsPath
 import glob
 import os
+import re
 
 def normalize_name(string):
     return string.replace(" ", "").replace("_", "").lower()
@@ -26,9 +27,11 @@ def statements(file):
 
 def use_keyword(statements, kw):
     nkw = normalize_name(kw)
+    nkw = re.sub(r'[@$&]\{[^\}]+\}', r'.+', nkw)
     for statement in statements:
-        if nkw in [normalize_name(token) for token in statement]:
-            return True
+        for token in statement:
+            if re.match(re.sub(r'[@$&]\{[^\}]+\}', r'.+', nkw), normalize_name(token)):
+                return True
     return False
 
 def extract_max_same_path(files):
@@ -66,5 +69,7 @@ class LibraryCheck(ResourceRule):
             common_path = extract_max_same_path(file_uses_keyword)
             if len(file_uses_keyword) == 1 and not(self_usage):
                 self.report(keyword, 'Move keyword `%s` to file `%s`' % (keyword.name, os.path.relpath(file_uses_keyword[0])), keyword.linenumber)
+            elif len(file_uses_keyword) == 0 and not(self_usage) :
+                self.report(keyword, 'Unused Keyword', keyword.linenumber)
             elif os.path.normpath(common_path) != os.path.normpath(os.path.dirname(resource.path)) and os.path.isdir(common_path) and not(self_usage):
                 self.report(keyword, 'Move keyword `%s` to folder `%s`' % (keyword.name, os.path.relpath(common_path)), keyword.linenumber)

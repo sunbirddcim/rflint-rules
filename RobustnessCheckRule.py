@@ -11,11 +11,14 @@ def check(self, obj, statement):
         elif statement[1].lower() == 'sleep':
             self.report(obj, 'DO NOT USE SLEEP!', statement.startline)
 
-def check_missing_waiting(self, obj, statements):
+def check_missing_waiting(self, obj, name, statements):
     previous = ['']
     for statement in statements:
-        if is_action_on_element(statement) and not is_wait_until_keyword(previous):
-            self.report(obj, "Require waiting before action", statement.startline)
+        if is_action_on_element(statement):
+            if not is_wait_until_keyword(previous):
+                self.report(obj, 'Require waiting before action', statement.startline)
+            elif not name.lower().endswith('after waiting'):
+                self.report(obj, 'Use keyword `xxx After Waiting` of DCTLibrary.txt instead.', statement.startline)
         previous = statement
 
 def is_template(suite):
@@ -110,7 +113,7 @@ class RobustnessCheck_Test(SuiteRule):
             for table in suite.tables:
                 if isinstance(table, TestcaseTable):
                     for testcase in table.testcases:
-                        check_missing_waiting(self, testcase, testcase.statements)
+                        check_missing_waiting(self, testcase, '', testcase.statements)
                         for statement in testcase.statements:
                             check(self, testcase, statement)
 
@@ -119,6 +122,6 @@ class RobustnessCheck_Keyword(KeywordRule):
     severity = WARNING
 
     def apply(self, keyword):
-        check_missing_waiting(self, keyword, keyword.statements)
+        check_missing_waiting(self, keyword, keyword.name, keyword.statements)
         for statement in keyword.statements:
             check(self, keyword, statement)
