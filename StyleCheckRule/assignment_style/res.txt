@@ -1,0 +1,12 @@
+*** Keywords ***
+Foo
+    ${variable}=    Get X
+    ${variable} =    Get X
+    ${width}    ${height} =    Get Size
+    ${width}    ${height}=    Get Size
+
+Foo 2
+    ${variable}    Get X
+    ${width}    ${height} =    Get Size
+    ${width} =    ${height}    Get Size
+    ${width}    ${height}    Get Size

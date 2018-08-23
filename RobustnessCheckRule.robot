@@ -10,10 +10,10 @@ Unselect frame statement in teardown (Resource)
     Check File    unselect_frame_in_teardown.txt    ${EMPTY}
 
 Unselect frame statement in teardown (Suite/Keyword)
-    Check File    unselect_frame_not_in_teardown(keyword).robot    W: 7, 0: `Unselect Frame` -> `[Teardown]\ \ \ \ Unselect Frame` (RobustnessCheck_Keyword)
+    Check File    unselect_frame_not_in_teardown(keyword).txt    W: 7, 0: `Unselect Frame` -> `[Teardown]\ \ \ \ Unselect Frame` (RobustnessCheck_Keyword)
 
 Unselect frame statement in teardown (Suite/Test)
-    Check File    unselect_frame_not_in_teardown(test).robot    W: 3, 0: `Unselect Frame` -> `[Teardown]\ \ \ \ Unselect Frame` (RobustnessCheck_Test)
+    Check File    unselect_frame_not_in_teardown(test).txt    W: 3, 0: `Unselect Frame` -> `[Teardown]\ \ \ \ Unselect Frame` (RobustnessCheck_Test)
 
 Wait Until Without Setting Timeout (Keyword)
     ${expected} =    Create List    W: 3, 0: Missing timeout argument? (RobustnessCheck_Keyword)

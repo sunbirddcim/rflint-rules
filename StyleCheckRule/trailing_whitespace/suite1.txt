@@ -1,0 +1,12 @@
+*** Test Case ***
+Test 1
+    Foo 
+	
+Test 2 
+    Foo
+ 
+Test 3 
+    Foo 
+
+Test 4
+    Foo

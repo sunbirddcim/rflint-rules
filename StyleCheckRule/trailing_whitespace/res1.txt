@@ -1,0 +1,8 @@
+*** Keyword *** 
+Test
+    Fooo 
+	
+
+*** Variables ***
+${var1}    123 
+${var2}    999

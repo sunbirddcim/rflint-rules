@@ -1,0 +1,1 @@
+robot -d out -F robot .
