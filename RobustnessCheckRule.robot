@@ -42,10 +42,10 @@ Wait Until Without Setting Timeout (Test)
     Check File    wait_until_without_setting_timeout(test).txt    ${expected}
 
 Missing Wait Befor Action (Keyword)
-    Check File    missing_wait_before_action(keyword).txt    W: 3, 0: Require waiting before action (RobustnessCheck_Keyword)
+    Check File    missing_wait_before_action(keyword).txt    W: 3, 0: Use keyword `ooo After Waiting` instead. (RobustnessCheck_Keyword)
 
 Missing Wait Befor Action (Test)
-    Check File    missing_wait_before_action(test).txt    W: 3, 0: Require waiting before action (RobustnessCheck_Test)
+    Check File    missing_wait_before_action(test).txt    W: 3, 0: Use keyword `ooo After Waiting` instead. (RobustnessCheck_Test)
 
 *** Keywords ***
 Check File

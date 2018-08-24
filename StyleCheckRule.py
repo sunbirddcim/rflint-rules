@@ -1,9 +1,9 @@
 from rflint.common import SuiteRule, KeywordRule, GeneralRule, WARNING, ERROR
-from rflint.parser import SettingTable, TestcaseTable, Keyword, Statement
+from rflint.parser import SettingTable, TestcaseTable, VariableTable, Testcase, Keyword, Row, Statement
 import re
 
 def line_number(obj):
-    if isinstance(obj, Keyword):
+    if isinstance(obj, Keyword) or isinstance(obj, Row):
         return obj.linenumber
     if isinstance(obj, Statement):
         return obj.startline
@@ -89,7 +89,12 @@ class AssignmentStyle(GeneralRule):
     severity = WARNING
 
     def report_if_should_format_variable(self, obj, statement):
-        variable = last_variable(statement)
+        if all(token == '' for token in statement):
+            return
+        if isinstance(statement, Statement):
+            variable = last_variable(statement)
+        elif isinstance(statement, Row): # Variable Table
+            variable = statement[0]
         linenumber = line_number(statement)
         if variable != None:
             if not variable.endswith('='):
@@ -97,17 +102,19 @@ class AssignmentStyle(GeneralRule):
             if variable.endswith('}='):
                 self.report(obj, 'Add a space between the variable and `=`', linenumber)
 
-
     def apply(self, robotfile):
         if not is_template(robotfile):
             for table in robotfile.tables:
                 if isinstance(table, TestcaseTable):
                     for testcase in table.testcases:
                         for statement in testcase.statements:
-                            self.report_if_should_format_variable(testcase, statement)
+                            self.report_if_should_format_variable(robotfile, statement)
+                if isinstance(table, VariableTable):
+                    for row in table.rows:
+                        self.report_if_should_format_variable(robotfile, row)
         for keyword in robotfile.keywords:
             for statement in keyword.statements:
-                self.report_if_should_format_variable(keyword, statement)
+                self.report_if_should_format_variable(robotfile, statement)
 
 class UseCamelCaseKeyword(GeneralRule):
 

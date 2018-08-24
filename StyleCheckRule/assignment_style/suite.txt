@@ -10,3 +10,7 @@ Foo 2
     ${width}    ${height} =    Get Size
     ${width} =    ${height}    Get Size
     ${width}    ${height}    Get Size
+
+*** Variable ***
+${x} =    123
+${y}    456
