@@ -28,14 +28,21 @@ def all_robot_files(path):
                 ret.append(os.path.join(root, f))
     return ret
 
+def get_subfolder_files_def_keywords_map(path):
+    files = all_robot_files(path)
+    file_keywords = dict()
+    for f in files:
+        file_keywords.setdefault(f, keywords(f))
+    return file_keywords
+
 def get_subfolder_files_used_keywords_map(path):
     files = all_robot_files(path)
     file_keywords = dict()
     for f in files:
-        used_keywords = []
+        def_keywords = []
         for statement in statements(f):
-            used_keywords.extend(extract_used_keywords(statement))
-        file_keywords.setdefault(f, used_keywords)
+            def_keywords.extend(extract_used_keywords(statement))
+        file_keywords.setdefault(f, def_keywords)
     return file_keywords
 
 def extract_used_keywords(tokens):
@@ -58,6 +65,8 @@ def extract_used_keywords(tokens):
     ['Run Keyword If', 'Wait Until Items List Page Is Visible']
     >>> extract_used_keywords(['', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
     ['Run Keywords', 'Action A', 'Action B', 'Action C']
+    >>> extract_used_keywords(['', 'Wait Until Keyword Succeeds', '1min', '1s', 'Action'])
+    ['Wait Until Keyword Succeeds', 'Action']
     """
     ret = []
     i = 0
@@ -84,6 +93,8 @@ def extract_used_keywords(tokens):
                                        'run keyword unless',
                                        'keyword should succeed within a period']:
                 i = i + 1
+            elif tokens[i].lower() in ['wait until keyword succeeds']:
+                i = i + 2
             elif tokens[i].lower() in ['run keywords']:
                 i = i + 1
                 action = []
@@ -121,6 +132,13 @@ def statements(file):
                     ret.append(statement)
     return ret
 
+def keywords(file):
+    rbfile = RobotFactory(file)
+    ret = []
+    for keyword in rbfile.walk(Keyword):
+        ret.append(keyword)
+    return ret
+
 def same(keyword_def, keyword_use):
     """
     >>> same('Get Position', 'Get Position 1')
@@ -128,6 +146,8 @@ def same(keyword_def, keyword_use):
     >>> same('Get Position', 'Get Position')
     True
     >>> same('Use Variable ${var1}', 'Use Variable 123')
+    True
+    >>> same('Use Variable 123', 'Use Variable ${var1}')
     True
     >>> same('Use Variable ${var1}', 'Use Variable ${var2}')
     True
@@ -137,8 +157,25 @@ def same(keyword_def, keyword_use):
     True
     >>> same('The Column ${customField.fieldName} Was Set To Be Visible', 'The Column ${customField} Was Set To Be Visible')
     True
+    >>> same('Action', '"*+,-./:;<="()')
+    False
+    >>> same('Action', '(')
+    False
+    >>> same('.', '.')
+    True
     """
-    return re.match("^%s$" % re.sub(r'[@$&]\{[^\}]+\}', r'.+', normalize_name(keyword_def)), normalize_name(keyword_use)) != None
+    try:
+        ndef = normalize_name(keyword_def)
+        nuse = normalize_name(keyword_use)
+        return re.match("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(ndef)), nuse) != None or re.match("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(nuse)), ndef) != None
+    except:
+        raise Exception((keyword_def, keyword_use))
+
+def keyword_in_keywordslist(keyword, keywords):
+    for k in keywords:
+        if same(keyword, k):
+            return True
+    return False
 
 class MoveKeyword(ResourceRule):
 
@@ -147,35 +184,63 @@ class MoveKeyword(ResourceRule):
     def apply(self, resource):
         file_keywords = get_subfolder_files_used_keywords_map(resource.path)
         for keyword in resource.keywords:
-            self_usage = keyword.name in file_keywords[resource.path]
-            fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if keyword.name in use_keywords]
+            self_usage = keyword_in_keywordslist(keyword.name, file_keywords[resource.path])
+            fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if keyword_in_keywordslist(keyword.name, use_keywords)]
 
             # Move the keyword to a file
             if len(fk_used_keyword) == 1 and not(self_usage):
-                self.report(keyword, 'Move keyword `%s` to file `%s`' % (keyword.name, os.path.relpath(fk_used_keyword[0][0])), keyword.linenumber)
+                self.report(keyword, 'Move the keyword to file `%s`' % (os.path.relpath(fk_used_keyword[0][0], os.path.dirname(resource.path))), keyword.linenumber)
 
             # Move the keyword to a folder
             common_path = extract_max_same_path([f for f, use_keywords in fk_used_keyword])
             if len(fk_used_keyword) > 1 and os.path.normpath(common_path) != os.path.normpath(os.path.dirname(resource.path)) and os.path.isdir(common_path) and not(self_usage):
-                self.report(keyword, 'Move keyword `%s` to folder `%s`' % (keyword.name, os.path.relpath(common_path)), keyword.linenumber)
+                self.report(keyword, 'Move the keyword to folder `%s`' % (os.path.relpath(common_path,  os.path.dirname(resource.path))), keyword.linenumber)
 
 class UnusedKeyword(GeneralRule):
 
     severity = WARNING
 
-    def keyword_in_keywordslist(self, keyword, keywords):
-        for k in keywords:
-            if same(normalize_name(keyword), normalize_name(k)):
-                return True
-        return False
-
     def apply(self, resource):
         file_keywords = get_subfolder_files_used_keywords_map(resource.path)
         for keyword in resource.keywords:
-            self_usage = self.keyword_in_keywordslist(keyword.name, file_keywords[resource.path])
-            fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if self.keyword_in_keywordslist(keyword.name, use_keywords)]
+            self_usage = keyword_in_keywordslist(keyword.name, file_keywords[resource.path])
+            fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if keyword_in_keywordslist(keyword.name, use_keywords)]
             if (isinstance(resource, SuiteFile) and not(self_usage)) or len(fk_used_keyword) == 0:
                 self.report(keyword, 'Unused Keyword', keyword.linenumber)
+
+class DuplicatedKeyword(GeneralRule):
+
+    severity = WARNING
+
+    def same_statements(self, statements1, statements2):
+        while [''] in statements1:
+            statements1.remove([''])
+        while [''] in statements2:
+            statements2.remove([''])
+        if len(statements1) != len(statements2):
+            return False
+        for i, s in enumerate(statements1):
+            if len(statements2[i]) != len(s):
+                return False
+            for j, t in enumerate(s):
+                if t != statements2[i][j]:
+                    return False
+        return True
+
+    def apply(self, rbfile):
+        file_keywords = get_subfolder_files_def_keywords_map(rbfile.path)  # TODO: refile.path -> project.path
+        for keyword in rbfile.keywords:
+            for f, ks in file_keywords.items():
+                if f == rbfile.path:
+                    continue
+                for k in ks:
+                    if same(k.name, keyword.name):
+                        if self.same_statements(k.statements, keyword.statements):
+                            self.report(keyword, 'Duplicated Keyword (name and impl): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
+                        else:
+                            self.report(keyword, 'Duplicated Keyword (name): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
+                    elif self.same_statements(k.statements, keyword.statements):
+                        self.report(keyword, 'Duplicated Keyword (impl): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
 
 if __name__ == "__main__":
     import doctest

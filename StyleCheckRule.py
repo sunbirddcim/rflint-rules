@@ -26,11 +26,22 @@ def extract_name(statement):
     'Get X'
     >>> extract_name(['', '${x}', '${y} =', 'Get Position'])
     'Get Position'
+    >>> extract_name(['# Hello'])
+    '# Hello'
+    >>> extract_name(['Given An Apple'])
+    'An Apple'
+    >>> extract_name(['When Snow White Eat'])
+    'Snow White Eat'
+    >>> extract_name(['Then She Is Happy'])
+    'She Is Happy'
     """
     for token in statement:
         if token in ['', '\\']:
             continue
         if not re.match(r'[@$&]\{[^\}]+\}.*', token):
+            for bdd_token in ['given', 'when', 'then']:
+                if token.lower().startswith(bdd_token):
+                    return token[len(bdd_token):].strip()
             return token
     return statement[0]
 
@@ -105,6 +116,8 @@ class UseCamelCaseKeyword(GeneralRule):
     def report_if_not_camel_case(self, obj, statement):
         tokens = action_name(statement).split(' ')
         linenumber = line_number(statement)
+        if tokens[0].startswith('#'):
+            return
         if any(len(token) > 0 and token[0].isalpha() and not token[0].isupper() for token in tokens):
             self.report(obj, 'Keyword name is not Camel Case.', linenumber)
 
