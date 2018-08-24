@@ -2,6 +2,7 @@ from rflint.common import ResourceRule, GeneralRule, ERROR, WARNING
 from rflint.parser import SettingTable, TestcaseTable
 from rflint import RobotFactory, Keyword, Testcase, SuiteFile
 from pathlib import PureWindowsPath
+from common import extract_name
 import glob
 import os
 import re
@@ -71,7 +72,7 @@ def extract_used_keywords(tokens):
     ret = []
     i = 0
     while i < len(tokens):
-        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i] not in ['\\', '']:
+        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i].lower() not in ['\\', '']:
             ret.append(tokens[i])
             if tokens[i].lower() in ['run keyword',
                                      'run keyword and continue on failure',

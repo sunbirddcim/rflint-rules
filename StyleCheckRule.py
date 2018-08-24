@@ -1,5 +1,6 @@
 from rflint.common import SuiteRule, KeywordRule, GeneralRule, WARNING, ERROR
 from rflint.parser import SettingTable, TestcaseTable, VariableTable, Testcase, Keyword, Row, Statement
+from common import extract_name
 import re
 
 def line_number(obj):
@@ -13,37 +14,6 @@ def action_name(obj):
         return obj.name
     if isinstance(obj, Statement):
         return extract_name(obj)
-
-def extract_name(statement):
-    """
-    >>> extract_name([''])
-    ''
-    >>> extract_name(['', 'Click Element'])
-    'Click Element'
-    >>> extract_name(['', '\\\\', 'Click Element'])
-    'Click Element'
-    >>> extract_name(['', '${x}', 'Get X'])
-    'Get X'
-    >>> extract_name(['', '${x}', '${y} =', 'Get Position'])
-    'Get Position'
-    >>> extract_name(['# Hello'])
-    '# Hello'
-    >>> extract_name(['Given An Apple'])
-    'An Apple'
-    >>> extract_name(['When Snow White Eat'])
-    'Snow White Eat'
-    >>> extract_name(['Then She Is Happy'])
-    'She Is Happy'
-    """
-    for token in statement:
-        if token in ['', '\\']:
-            continue
-        if not re.match(r'[@$&]\{[^\}]+\}.*', token):
-            for bdd_token in ['given', 'when', 'then']:
-                if token.lower().startswith(bdd_token):
-                    return token[len(bdd_token):].strip()
-            return token
-    return statement[0]
 
 def last_variable(statement):
     """
