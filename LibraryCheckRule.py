@@ -282,7 +282,7 @@ class DuplicatedKeyword(GeneralRule):
         file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)  # TODO: refile.path -> project.path
         for keyword in rbfile.keywords:
             for f, ks in file_keywords.items():
-                if f.endswith('\\test_automation\\Keywords.txt') or '\\PageObjects\\' in f or '\\DCT-extra issues\\' in f:
+                if f.endswith('\\test_automation\\Keywords.txt') or '\\PageObjects\\' in f or '\\DCT-extra issues\\' in f or '\\End-to-end test\\' in f or '\\DCT-14884 ' in f or '\\DCT-14886 ' in f:
                     continue
                 if f == rbfile.path:
                     continue
