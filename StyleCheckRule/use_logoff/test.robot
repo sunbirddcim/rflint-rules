@@ -13,5 +13,5 @@ Suite
 *** Keywords ***
 Check File
     [Arguments]    ${file}    ${message}
-    ${output} =    Run    rflint --rulefile StyleCheckRule.py --ignore all --no-filenames --warn UseLogoff "${CURDIR}/${file}"
+    ${output} =    Run    python -m rflint --rulefile StyleCheckRule.py --ignore all --no-filenames --warn UseLogoff "${CURDIR}/${file}"
     Should Be Equal    ${output}    ${message}

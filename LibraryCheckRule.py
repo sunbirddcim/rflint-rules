@@ -2,7 +2,6 @@ from rflint.common import ResourceRule, GeneralRule, ERROR, WARNING
 from rflint.parser import SettingTable, TestcaseTable
 from rflint import RobotFactory, Keyword, Testcase, SuiteFile
 from pathlib import PureWindowsPath
-from common import extract_name
 import glob
 import os
 import re
@@ -66,13 +65,15 @@ def extract_used_keywords(tokens):
     ['Run Keyword If', 'Wait Until Items List Page Is Visible']
     >>> extract_used_keywords(['', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
     ['Run Keywords', 'Action A', 'Action B', 'Action C']
+    >>> extract_used_keywords(['[Teardown]', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
+    ['Run Keywords', 'Action A', 'Action B', 'Action C']
     >>> extract_used_keywords(['', 'Wait Until Keyword Succeeds', '1min', '1s', 'Action'])
     ['Wait Until Keyword Succeeds', 'Action']
     """
     ret = []
     i = 0
     while i < len(tokens):
-        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i].lower() not in ['\\', '']:
+        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i].lower() not in ['\\', '', '[teardown]']:
             ret.append(tokens[i])
             if tokens[i].lower() in ['run keyword',
                                      'run keyword and continue on failure',

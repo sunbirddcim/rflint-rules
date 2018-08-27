@@ -1,6 +1,6 @@
 from rflint.common import SuiteRule, KeywordRule, GeneralRule, WARNING, ERROR
 from rflint.parser import SettingTable, TestcaseTable, VariableTable, Testcase, Keyword, Row, Statement
-from common import extract_name
+from lib.common import extract_name
 import re
 
 def line_number(obj):
