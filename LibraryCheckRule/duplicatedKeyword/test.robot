@@ -26,8 +26,15 @@ Case 3
     ${expected} =    Evaluate    '\\n'.join(${expected})
     Check File    case3_sibling/sub1/res1.txt    ${expected}
 
+Case 4
+    ${expected} =    Create List
+    ...    W: 2, 0: Duplicated Keyword (name and impl): ..\\sub2\\res2.txt:2 (DuplicatedKeyword)
+    ...    W: 2, 0: Duplicated Keyword (name and impl): ..\\sub3\\res3.txt:2 (DuplicatedKeyword)
+    ${expected} =    Evaluate    '\\n'.join(${expected})
+    Check File    case4_sibling_more/sub1/res1.txt    ${expected}
+
 *** Keywords ***
 Check File
     [Arguments]    ${file}    ${message}
-    ${output} =    Run    rflint --rulefile LibraryCheckRule.py --ignore all --no-filenames --warn DuplicatedKeyword "${CURDIR}/${file}"
+    ${output} =    Run    python -m rflint --rulefile LibraryCheckRule.py --ignore all --no-filenames --warn DuplicatedKeyword "${CURDIR}/${file}"
     Should Be Equal    ${output}    ${message}

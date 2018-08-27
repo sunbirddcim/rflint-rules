@@ -1,0 +1,18 @@
+*** Test Cases ***
+BDD
+    Given    Action 1
+    When    Action 2
+    Then    Action 3
+
+*** Keywords ***
+Action 1
+    Comment
+
+Action 4
+    Comment
+
+Action 2
+    Comment
+
+Action 3
+    Comment

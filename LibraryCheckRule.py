@@ -6,6 +6,37 @@ import glob
 import os
 import re
 
+def extract_name(statement):
+    """
+    >>> extract_name([''])
+    ''
+    >>> extract_name(['', 'Click Element'])
+    'Click Element'
+    >>> extract_name(['', '\\\\', 'Click Element'])
+    'Click Element'
+    >>> extract_name(['', '${x}', 'Get X'])
+    'Get X'
+    >>> extract_name(['', '${x}', '${y} =', 'Get Position'])
+    'Get Position'
+    >>> extract_name(['# Hello'])
+    '# Hello'
+    >>> extract_name(['Given An Apple'])
+    'An Apple'
+    >>> extract_name(['When Snow White Eat'])
+    'Snow White Eat'
+    >>> extract_name(['Then She Is Happy'])
+    'She Is Happy'
+    """
+    for token in statement:
+        if token in ['', '\\']:
+            continue
+        if not re.match(r'[@$&]\{[^\}]+\}.*', token):
+            for bdd_token in ['given', 'when', 'then']:
+                if token.lower().startswith(bdd_token):
+                    return token[len(bdd_token):].strip()
+            return token
+    return statement[0]
+
 def extract_max_same_path(files):
     dirs = [os.path.dirname(f) for f in files]
     if dirs == []:
@@ -29,8 +60,15 @@ def all_robot_files(path):
     return ret
 
 def get_project_folder_files_def_keywords_map(path):
+    def is_root_folder(path):
+        try:
+            if '.project' in [f.encode('cp950').decode() for f in os.listdir(path)]:
+                return True
+        except:
+            if '.project' in [f.encode('utf-8').decode() for f in os.listdir(path)]:
+                return True
     def project_file(path):
-        if '.project' in [f.encode('cp950').decode() for f in os.listdir(path)]:
+        if is_root_folder(path):
             return '%s/.project' % path
         return project_file(PureWindowsPath(path).parent)
     return get_subfolder_files_def_keywords_map(project_file(PureWindowsPath(path).parent))
@@ -58,6 +96,10 @@ def extract_used_keywords(tokens):
     []
     >>> extract_used_keywords(['Click Element'])
     ['Click Element']
+    >>> extract_used_keywords(['When', 'Click Element'])
+    ['Click Element']
+    >>> extract_used_keywords(['When Click Element'])
+    ['Click Element']
     >>> extract_used_keywords(['', 'Click Element'])
     ['Click Element']
     >>> extract_used_keywords(['', '${x}', 'Get X'])
@@ -80,8 +122,8 @@ def extract_used_keywords(tokens):
     ret = []
     i = 0
     while i < len(tokens):
-        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i].lower() not in ['\\', '', '[teardown]']:
-            ret.append(tokens[i])
+        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i].lower() not in ['\\', '', '[teardown]', 'given', 'when', 'then']:
+            ret.append(extract_name([tokens[i]]))
             if tokens[i].lower() in ['run keyword',
                                      'run keyword and continue on failure',
                                      'run keyword and ignore error',
@@ -240,6 +282,8 @@ class DuplicatedKeyword(GeneralRule):
         file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)  # TODO: refile.path -> project.path
         for keyword in rbfile.keywords:
             for f, ks in file_keywords.items():
+                if f.endswith('\\test_automation\\Keywords.txt') or '\\PageObjects\\' in f or '\\DCT-extra issues\\' in f:
+                    continue
                 if f == rbfile.path:
                     continue
                 for k in ks:
