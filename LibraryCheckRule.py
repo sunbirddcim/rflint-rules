@@ -28,6 +28,13 @@ def all_robot_files(path):
                 ret.append(os.path.join(root, f))
     return ret
 
+def get_project_folder_files_def_keywords_map(path):
+    def project_file(path):
+        if '.project' in [f.encode('cp950').decode() for f in os.listdir(path)]:
+            return '%s/.project' % path
+        return project_file(PureWindowsPath(path).parent)
+    return get_subfolder_files_def_keywords_map(project_file(PureWindowsPath(path).parent))
+
 def get_subfolder_files_def_keywords_map(path):
     files = all_robot_files(path)
     file_keywords = dict()
@@ -230,7 +237,7 @@ class DuplicatedKeyword(GeneralRule):
         return True
 
     def apply(self, rbfile):
-        file_keywords = get_subfolder_files_def_keywords_map(rbfile.path)  # TODO: refile.path -> project.path
+        file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)  # TODO: refile.path -> project.path
         for keyword in rbfile.keywords:
             for f, ks in file_keywords.items():
                 if f == rbfile.path:
