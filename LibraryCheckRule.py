@@ -118,11 +118,13 @@ def extract_used_keywords(tokens):
     ['Run Keywords', 'Action A', 'Action B', 'Action C']
     >>> extract_used_keywords(['', 'Wait Until Keyword Succeeds', '1min', '1s', 'Action'])
     ['Wait Until Keyword Succeeds', 'Action']
+    >>> extract_used_keywords(['[Template]', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
+    ['Run Keywords', 'Action A', 'Action B', 'Action C']
     """
     ret = []
     i = 0
     while i < len(tokens):
-        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i].lower() not in ['\\', '', '[teardown]', 'given', 'when', 'then']:
+        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i].lower() not in ['\\', '', '[teardown]', '[template]', 'given', 'when', 'then']:
             ret.append(extract_name([tokens[i]]))
             if tokens[i].lower() in ['run keyword',
                                      'run keyword and continue on failure',
