@@ -103,15 +103,15 @@ class AssignmentStyle(GeneralRule):
                 self.report(obj, 'Add a space between the variable and `=`', linenumber)
 
     def apply(self, robotfile):
-        if not is_template(robotfile):
-            for table in robotfile.tables:
-                if isinstance(table, TestcaseTable):
+        for table in robotfile.tables:
+            if isinstance(table, TestcaseTable):
+                if not is_template(robotfile):
                     for testcase in table.testcases:
                         for statement in testcase.statements:
                             self.report_if_should_format_variable(robotfile, statement)
-                if isinstance(table, VariableTable):
-                    for row in table.rows:
-                        self.report_if_should_format_variable(robotfile, row)
+            if isinstance(table, VariableTable):
+                for row in table.rows:
+                    self.report_if_should_format_variable(robotfile, row)
         for keyword in robotfile.keywords:
             for statement in keyword.statements:
                 self.report_if_should_format_variable(robotfile, statement)
@@ -129,8 +129,8 @@ class UseCamelCaseKeyword(GeneralRule):
             self.report(obj, 'Keyword name is not Camel Case.', linenumber)
 
     def apply(self, robotfile):
-        if not is_template(robotfile):
-            for table in robotfile.tables:
+        for table in robotfile.tables:
+            if not is_template(robotfile):
                 if isinstance(table, TestcaseTable):
                     for testcase in table.testcases:
                         for statement in testcase.statements:
