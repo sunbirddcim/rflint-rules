@@ -59,18 +59,25 @@ def all_robot_files(path):
                 ret.append(os.path.join(root, f))
     return ret
 
+def is_root_folder(path):
+    try:
+        if not os.path.isdir(path):
+            return False
+        if '.project' in [f.encode('cp950').decode() for f in os.listdir(path)]:
+            return True
+    except:
+        if '.project' in [f.encode('utf-8').decode() for f in os.listdir(path)]:
+            return True
+
+def project_file(path):
+    return '%s/.project' % project_root(path)
+
+def project_root(path):
+    if is_root_folder(path):
+        return path
+    return project_root(PureWindowsPath(path).parent)
+
 def get_project_folder_files_def_keywords_map(path):
-    def is_root_folder(path):
-        try:
-            if '.project' in [f.encode('cp950').decode() for f in os.listdir(path)]:
-                return True
-        except:
-            if '.project' in [f.encode('utf-8').decode() for f in os.listdir(path)]:
-                return True
-    def project_file(path):
-        if is_root_folder(path):
-            return '%s/.project' % path
-        return project_file(PureWindowsPath(path).parent)
     return get_subfolder_files_def_keywords_map(project_file(PureWindowsPath(path).parent))
 
 def get_subfolder_files_def_keywords_map(path):
@@ -235,7 +242,7 @@ class MoveKeyword(ResourceRule):
     severity = WARNING
 
     def apply(self, resource):
-        file_keywords = get_subfolder_files_used_keywords_map(resource.path)
+        file_keywords = get_subfolder_files_used_keywords_map(resource.path)  # TODO resource.path -> project_root(resource.path)
         for keyword in resource.keywords:
             self_usage = keyword_in_keywordslist(keyword.name, file_keywords[resource.path])
             fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if keyword_in_keywordslist(keyword.name, use_keywords)]
@@ -254,7 +261,7 @@ class UnusedKeyword(GeneralRule):
     severity = WARNING
 
     def apply(self, resource):
-        file_keywords = get_subfolder_files_used_keywords_map(resource.path)
+        file_keywords = get_subfolder_files_used_keywords_map(project_root(resource.path))
         for keyword in resource.keywords:
             self_usage = keyword_in_keywordslist(keyword.name, file_keywords[resource.path])
             fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if keyword_in_keywordslist(keyword.name, use_keywords)]
@@ -281,7 +288,7 @@ class DuplicatedKeyword(GeneralRule):
         return True
 
     def apply(self, rbfile):
-        file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)  # TODO: refile.path -> project.path
+        file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)
         for keyword in rbfile.keywords:
             for f, ks in file_keywords.items():
                 if f.endswith('\\test_automation\\Keywords.txt') or '\\PageObjects\\' in f or '\\DCT-extra issues\\' in f or '\\End-to-end test\\' in f or '\\DCT-14884 ' in f or '\\DCT-14886 ' in f:
