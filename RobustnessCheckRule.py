@@ -16,9 +16,9 @@ def check_missing_waiting(self, obj, name, statements):
     for statement in statements:
         if is_action_on_element(statement):
             if not is_wait_until_keyword(previous):
-                self.report(obj, 'Use keyword `ooo After Waiting` instead.', statement.startline)
-            elif not name.lower().endswith('after waiting'):
-                self.report(obj, 'Use keyword `ooo After Waiting` instead.', statement.startline)
+                self.report(obj, 'Use keyword `ooo After It Is Visible` instead.', statement.startline)
+            elif not name.lower().endswith('after it is visible'):
+                self.report(obj, 'Use keyword `ooo After It Is Visible` instead.', statement.startline)
         previous = statement
 
 def is_template(suite):
