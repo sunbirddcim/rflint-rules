@@ -113,7 +113,7 @@ class RobustnessCheck_Test(SuiteRule):
             for table in suite.tables:
                 if isinstance(table, TestcaseTable):
                     for testcase in table.testcases:
-                        check_missing_waiting(self, testcase, '', testcase.statements)
+                        # check_missing_waiting(self, testcase, '', testcase.statements)
                         for statement in testcase.statements:
                             check(self, testcase, statement)
 
@@ -122,6 +122,6 @@ class RobustnessCheck_Keyword(KeywordRule):
     severity = WARNING
 
     def apply(self, keyword):
-        check_missing_waiting(self, keyword, keyword.name, keyword.statements)
+        # check_missing_waiting(self, keyword, keyword.name, keyword.statements)
         for statement in keyword.statements:
             check(self, keyword, statement)
