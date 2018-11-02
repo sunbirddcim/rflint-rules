@@ -127,49 +127,40 @@ def extract_used_keywords(tokens):
     ['Wait Until Keyword Succeeds', 'Action']
     >>> extract_used_keywords(['[Template]', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
     ['Run Keywords', 'Action A', 'Action B', 'Action C']
+    >>> extract_used_keywords(['Run Keywords', 'Action A', 'Action B', 'Action C'])
+    ['Run Keywords', 'Action A', 'Action B', 'Action C']
+    >>> extract_used_keywords(['Run Keyword If', '${cond}', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'ELSE IF', '${cond}', 'Run Keywords', 'Action C', 'AND', 'Action D'])
+    ['Run Keyword If', 'Run Keywords', 'Action A', 'Action B', 'Run Keywords', 'Action C', 'Action D']
+    >>> extract_used_keywords(['${v} =', 'Run Keyword If', '${cond}', 'Action A'])
+    ['Run Keyword If', 'Action A']
     """
     ret = []
-    i = 0
-    while i < len(tokens):
-        if not re.match(r'[@$&]\{[^\}]+\}.*', tokens[i]) and tokens[i].lower() not in ['\\', '', '[teardown]', '[template]', 'given', 'when', 'then']:
-            ret.append(extract_name([tokens[i]]))
-            if tokens[i].lower() in ['run keyword',
-                                     'run keyword and continue on failure',
-                                     'run keyword and ignore error',
-                                     'run keyword and return',
-                                     'run keyword and return status',
-                                     'run keyword if all critical tests passed',
-                                     'run keyword if all tests passed',
-                                     'run keyword if any critical tests failed',
-                                     'run keyword if any tests failed',
-                                     'run keyword if test failed',
-                                     'run keyword if test passed',
-                                     'run keyword if timeout occurred']:
-                # TODO ELSE
-                pass
-            elif tokens[i].lower() in ['run keyword and return if',
-                                       'run keyword and expect error',
-                                       'run keyword if',
-                                       'run keyword unless',
-                                       'keyword should succeed within a period']:
-                i = i + 1
-            elif tokens[i].lower() in ['wait until keyword succeeds']:
-                i = i + 2
-            elif tokens[i].lower() in ['run keywords']:
-                i = i + 1
-                action = []
-                while i < len(tokens):
-                    if tokens[i] == 'AND':
-                        ret.extend(extract_used_keywords(action))
-                        action = []
-                    else:
-                        action.append(tokens[i])
-                    i = i + 1
-                ret.extend(extract_used_keywords(action))
-                return ret
-            else:
-                return ret
-        i = i + 1
+    if len(tokens) == 0:
+        return ret
+    if tokens[0].lower() in ['\\', '', '[teardown]', '[template]', '[setup]', 'given', 'when', 'then'] or re.match(r'[@$&]\{[^\}]+\}.*', tokens[0].lower()):
+        return extract_used_keywords(tokens[1:])
+    if tokens[0].lower() == 'else if':
+        return extract_used_keywords(tokens[2:])
+    ret.append(extract_name(tokens))
+    if tokens[0].lower() in ['run keyword', 'run keyword and continue on failure', 'run keyword and ignore error',
+                             'run keyword and return', 'run keyword and return status', 'run keyword if all critical tests passed',
+                             'run keyword if all tests passed', 'run keyword if any critical tests failed', 'run keyword if any tests failed',
+                             'run keyword if test failed', 'run keyword if test passed', 'run keyword if timeout occurred']:
+        ret.extend(extract_used_keywords(tokens[1:]))
+    elif tokens[0].lower() in ['run keyword and return if', 'run keyword and expect error', 'run keyword if',
+                               'run keyword unless', 'keyword should succeed within a period']:
+        indexes = [2] + [i for i, v in enumerate(tokens) if v.lower() in ['else if', 'else']]
+        for i in range(len(indexes)-1):
+            ret.extend(extract_used_keywords(tokens[indexes[i]:indexes[i+1]]))
+        ret.extend(extract_used_keywords(tokens[indexes[-1]:]))
+    elif tokens[0].lower() in ['wait until keyword succeeds']:
+        ret.extend(extract_used_keywords(tokens[3:]))
+    elif tokens[0].lower() in ['run keywords']:
+        if 'AND' in tokens:
+            for i in [i for i, v in enumerate(tokens) if v.lower() in ['run keywords', 'and']]:
+                ret.append(tokens[i+1])
+        else:
+            ret.extend(tokens[1:])
     return ret
 
 def normalize_name(string):
