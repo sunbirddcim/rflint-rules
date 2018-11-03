@@ -1,4 +1,4 @@
-from rflint.common import ResourceRule, GeneralRule, WARNING
+from rflint.common import GeneralRule, WARNING, ERROR
 from rflint.parser import SettingTable, TestcaseTable
 from rflint import RobotFactory, Keyword
 from pathlib import PureWindowsPath
@@ -6,44 +6,7 @@ import re
 import os
 import sys
 sys.path.append(os.path.dirname(__file__))
-from util import project_meta
-
-def extract_name(tokens):
-    """
-    No keyword
-    >>> extract_name([''])
-    >>> extract_name(['# Hello'])
-
-    indent
-    >>> extract_name(['', 'Click Element'])
-    'Click Element'
-    >>> extract_name(['', '\\\\', 'Click Element'])
-    'Click Element'
-
-    assign
-    >>> extract_name(['', '${x}', 'Get X'])
-    'Get X'
-    >>> extract_name(['', '${x}', '${y} =', 'Get Position'])
-    'Get Position'
-
-    behavior-driven
-    >>> extract_name(['Given An Apple'])
-    'An Apple'
-    >>> extract_name(['When Snow White Eat'])
-    'Snow White Eat'
-    >>> extract_name(['Then She Is Happy'])
-    'She Is Happy'
-    """
-    if len(tokens) == 0 or tokens[0].startswith('#'):
-        return None
-    if tokens[0] in ['', '\\']:
-        return extract_name(tokens[1:])
-    if re.match(r'[@$&]\{[^\}]+\}.*', tokens[0]):
-        return extract_name(tokens[1:])
-    for bdd_token in ['given ', 'when ', 'then ']:
-        if tokens[0].lower().startswith(bdd_token):
-            return tokens[0][len(bdd_token):].strip()
-    return tokens[0]
+from utility import project_meta
 
 
 def extract_max_same_path(files):
@@ -103,104 +66,8 @@ def get_subfolder_files_def_keywords_map(path):
     return file_keywords
 
 
-def get_subfolder_files_used_keywords_map(path):
-    files = all_robot_files(path)
-    file_keywords = dict()
-    for f in files:
-        def_keywords = []
-        for statement in statements(f):
-            def_keywords.extend(extract_used_keywords(statement))
-        file_keywords.setdefault(f, def_keywords)
-    return file_keywords
-
-
-def extract_used_keywords(tokens):
-    """
-    >>> extract_used_keywords([''])
-    []
-    >>> extract_used_keywords(['Click Element'])
-    ['Click Element']
-    >>> extract_used_keywords(['When', 'Click Element'])
-    ['Click Element']
-    >>> extract_used_keywords(['When Click Element'])
-    ['Click Element']
-    >>> extract_used_keywords(['', 'Click Element'])
-    ['Click Element']
-    >>> extract_used_keywords(['', '${x}', 'Get X'])
-    ['Get X']
-    >>> extract_used_keywords(['', '${x}', '${y} =', 'Get Position'])
-    ['Get Position']
-    >>> extract_used_keywords(['', '\\\\', 'Get Position'])
-    ['Get Position']
-    >>> extract_used_keywords(['', 'Run Keyword', 'Get Position'])
-    ['Run Keyword', 'Get Position']
-    >>> extract_used_keywords(['', 'Run Keyword If',"'${item}'=='Items List'", 'Wait Until Items List Page Is Visible'])
-    ['Run Keyword If', 'Wait Until Items List Page Is Visible']
-    >>> extract_used_keywords(['', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
-    ['Run Keywords', 'Action A', 'Action B', 'Action C']
-    >>> extract_used_keywords(['[Teardown]', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
-    ['Run Keywords', 'Action A', 'Action B', 'Action C']
-    >>> extract_used_keywords(['', 'Wait Until Keyword Succeeds', '1min', '1s', 'Action'])
-    ['Wait Until Keyword Succeeds', 'Action']
-    >>> extract_used_keywords(['[Template]', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
-    ['Run Keywords', 'Action A', 'Action B', 'Action C']
-    >>> extract_used_keywords(['Run Keywords', 'Action A', 'Action B', 'Action C'])
-    ['Run Keywords', 'Action A', 'Action B', 'Action C']
-    >>> extract_used_keywords(['Run Keyword If', '${cond}', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'ELSE IF', '${cond}', 'Run Keywords', 'Action C', 'AND', 'Action D'])
-    ['Run Keyword If', 'Run Keywords', 'Action A', 'Action B', 'Run Keywords', 'Action C', 'Action D']
-    >>> extract_used_keywords(['${v} =', 'Run Keyword If', '${cond}', 'Action A'])
-    ['Run Keyword If', 'Action A']
-    """
-    ret = []
-    if len(tokens) == 0:
-        return ret
-    if tokens[0].lower() in ['\\', '', '[teardown]', '[template]', '[setup]', 'given', 'when', 'then'] or re.match(r'[@$&]\{[^\}]+\}.*', tokens[0].lower()):
-        return extract_used_keywords(tokens[1:])
-    if tokens[0].lower() == 'else if':
-        return extract_used_keywords(tokens[2:])
-    ret.append(extract_name(tokens))
-    if tokens[0].lower() in ['run keyword', 'run keyword and continue on failure', 'run keyword and ignore error',
-                             'run keyword and return', 'run keyword and return status', 'run keyword if all critical tests passed',
-                             'run keyword if all tests passed', 'run keyword if any critical tests failed', 'run keyword if any tests failed',
-                             'run keyword if test failed', 'run keyword if test passed', 'run keyword if timeout occurred']:
-        ret.extend(extract_used_keywords(tokens[1:]))
-    elif tokens[0].lower() in ['run keyword and return if', 'run keyword and expect error', 'run keyword if',
-                               'run keyword unless', 'keyword should succeed within a period']:
-        indexes = [2] + [i for i, v in enumerate(tokens) if v.lower() in ['else if', 'else']]
-        for i in range(len(indexes)-1):
-            ret.extend(extract_used_keywords(tokens[indexes[i]:indexes[i+1]]))
-        ret.extend(extract_used_keywords(tokens[indexes[-1]:]))
-    elif tokens[0].lower() in ['wait until keyword succeeds']:
-        ret.extend(extract_used_keywords(tokens[3:]))
-    elif tokens[0].lower() in ['run keywords']:
-        if 'AND' in tokens:
-            for i in [i for i, v in enumerate(tokens) if v.lower() in ['run keywords', 'and']]:
-                ret.append(tokens[i+1])
-        else:
-            ret.extend(tokens[1:])
-    return ret
-
-
 def normalize_name(string):
     return string.replace(" ", "").replace("_", "").lower()
-
-
-def statements(file):
-    suite = RobotFactory(file)
-    ret = []
-    for keyword in suite.walk(Keyword):
-        for statement in keyword.statements:
-            ret.append(statement)
-    for table in suite.tables:
-        if isinstance(table, SettingTable):
-            for statement in table.statements:
-                if statement[0].lower() in ['test setup', 'test teardown', 'suite setup', 'suite teardown', 'test template']:
-                    ret.append(statement[1:])
-        elif isinstance(table, TestcaseTable):
-            for testcase in table.testcases:
-                for statement in testcase.statements:
-                    ret.append(statement)
-    return ret
 
 
 def keywords(file):
@@ -250,13 +117,6 @@ def same(keyword_def, keyword_use):
         raise Exception((keyword_def, keyword_use))
 
 
-def keyword_in_keywordslist(keyword, keywords):
-    for k in keywords:
-        if same(keyword, k):
-            return True
-    return False
-
-
 metas = None
 def get_metas(path):
     global metas
@@ -265,46 +125,49 @@ def get_metas(path):
     return metas
 
 
-file_keywords = None
+class MoveKeyword(GeneralRule):
 
-class MoveKeyword(ResourceRule):
+    severity = ERROR
 
-    severity = WARNING
-
-    def apply(self, resource):
-        global file_keywords
-        if file_keywords == None:
-            file_keywords = get_subfolder_files_used_keywords_map(resource.path)
-        for keyword in resource.keywords:
-            self_usage = keyword_in_keywordslist(keyword.name, file_keywords[resource.path])
-            fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if keyword_in_keywordslist(keyword.name, use_keywords)]
+    def apply(self, rf_file):
+        metas = get_metas(rf_file.path)
+        current = next(filter(lambda x: x.source == rf_file.path, metas))
+        for keyword, values in current.defs.items():
+            used_metas = [meta for meta in metas if keyword in meta.uses.keys()]
+            self_usage = any(same(keyword, used) for used in current.uses.keys())
 
             # Move the keyword to a file
-            if len(fk_used_keyword) == 1 and not(self_usage):
-                self.report(keyword, 'Move the keyword to file `%s`' % (os.path.relpath(fk_used_keyword[0][0], os.path.dirname(resource.path))), keyword.linenumber)
+            if len(used_metas) == 1 and not self_usage:
+                self.report(rf_file, 'Move the keyword to file `%s`' % (os.path.relpath(used_metas[0].source, os.path.dirname(rf_file.path))), values['line'])
 
             # Move the keyword to a folder
-            common_path = extract_max_same_path([f for f, use_keywords in fk_used_keyword])
-            if len(fk_used_keyword) > 1 and os.path.normpath(common_path) != os.path.normpath(os.path.dirname(resource.path)) and os.path.isdir(common_path) and not(self_usage):
-                self.report(keyword, 'Move the keyword to folder `%s`' % (os.path.relpath(common_path,  os.path.dirname(resource.path))), keyword.linenumber)
+            common_path = extract_max_same_path([meta.source for meta in used_metas])
+            if len(used_metas) > 1 and os.path.normpath(common_path) != os.path.normpath(os.path.dirname(rf_file.path)) and os.path.isdir(common_path) and not self_usage:
+                move = os.path.relpath(common_path, os.path.dirname(rf_file.path))
+                if '..' not in move:
+                    self.report(rf_file, 'Move the keyword to folder `%s\\keywords.txt`' % move, values['line'])
 
 
 class UnusedKeyword(GeneralRule):
 
-    severity = WARNING
+    severity = ERROR
 
-    def apply(self, rbfile):
-        metas = get_metas(rbfile.path)
-        current = next(filter(lambda x: x.source == rbfile.path, metas))
-        for d in current.defs:
-            uses = []
-            for meta in metas:
-                if meta.source != rbfile.path:
-                    uses.extend(meta.uses)
-            if any(same(d['name'], use) for use in uses) or any(same(d['name'], use) for use in current.uses):
-                continue
+    def apply(self, rf_file):
+        metas = get_metas(rf_file.path)
+        current = next(filter(lambda x: x.source == rf_file.path, metas))
+        for keyword, values in current.defs.items():
+            if current.is_test_data:
+                if self.not_used(keyword, [current]):
+                    self.report(rf_file, 'Unused Keyword', values['line'])
             else:
-                self.report(rbfile, 'Unused Keyword', d['line'])
+                if self.not_used(keyword, metas):
+                    self.report(rf_file, 'Unused Keyword', values['line'])
+
+    def not_used(self, keyword, metas):
+        for meta in metas:
+            if any(same(keyword, used) for used in meta.uses.keys()):
+                return False
+        return True
 
 
 class DuplicatedKeyword(GeneralRule):
@@ -327,9 +190,7 @@ class DuplicatedKeyword(GeneralRule):
         return True
 
     def apply(self, rbfile):
-        global file_keywords
-        if file_keywords == None:
-            file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)
+        file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)
         for keyword in rbfile.keywords:
             for f, ks in file_keywords.items():
                 if f.endswith('\\test_automation\\Keywords.txt') or f.endswith('\\test_automation\\End-to-end test\\Keywords.txt') or '\\PageObjects\\' in f or '\\End-to-end test\\Capacity' in f or '\\End-to-end test\\Plan to decomm' in f or '\\End-to-end test\\Change Management' in f or '\\DCT-extra issues\\' in f or '\\DCT-14884 ' in f or '\\DCT-14886 ' in f:
