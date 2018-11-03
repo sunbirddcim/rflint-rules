@@ -1,25 +1,32 @@
-from rflint.common import ResourceRule, GeneralRule, ERROR, WARNING
+from rflint.common import ResourceRule, GeneralRule, WARNING
 from rflint.parser import SettingTable, TestcaseTable
-from rflint import RobotFactory, Keyword, Testcase, SuiteFile
+from rflint import RobotFactory, Keyword
 from pathlib import PureWindowsPath
-import glob
-import os
 import re
+import os
+import sys
+sys.path.append(os.path.dirname(__file__))
+from util import project_meta
 
-def extract_name(statement):
+def extract_name(tokens):
     """
+    No keyword
     >>> extract_name([''])
-    ''
+    >>> extract_name(['# Hello'])
+
+    indent
     >>> extract_name(['', 'Click Element'])
     'Click Element'
     >>> extract_name(['', '\\\\', 'Click Element'])
     'Click Element'
+
+    assign
     >>> extract_name(['', '${x}', 'Get X'])
     'Get X'
     >>> extract_name(['', '${x}', '${y} =', 'Get Position'])
     'Get Position'
-    >>> extract_name(['# Hello'])
-    '# Hello'
+
+    behavior-driven
     >>> extract_name(['Given An Apple'])
     'An Apple'
     >>> extract_name(['When Snow White Eat'])
@@ -27,15 +34,17 @@ def extract_name(statement):
     >>> extract_name(['Then She Is Happy'])
     'She Is Happy'
     """
-    for token in statement:
-        if token in ['', '\\']:
-            continue
-        if not re.match(r'[@$&]\{[^\}]+\}.*', token):
-            for bdd_token in ['given', 'when', 'then']:
-                if token.lower().startswith(bdd_token):
-                    return token[len(bdd_token):].strip()
-            return token
-    return statement[0]
+    if len(tokens) == 0 or tokens[0].startswith('#'):
+        return None
+    if tokens[0] in ['', '\\']:
+        return extract_name(tokens[1:])
+    if re.match(r'[@$&]\{[^\}]+\}.*', tokens[0]):
+        return extract_name(tokens[1:])
+    for bdd_token in ['given ', 'when ', 'then ']:
+        if tokens[0].lower().startswith(bdd_token):
+            return tokens[0][len(bdd_token):].strip()
+    return tokens[0]
+
 
 def extract_max_same_path(files):
     dirs = [os.path.dirname(f) for f in files]
@@ -50,6 +59,7 @@ def extract_max_same_path(files):
             break
     return ''.join(chars)
 
+
 def all_robot_files(path):
     ret = []
     p = PureWindowsPath(path)
@@ -58,6 +68,7 @@ def all_robot_files(path):
             if f.endswith('.txt') or f.endswith('.robot'):
                 ret.append(os.path.join(root, f))
     return ret
+
 
 def is_root_folder(path):
     try:
@@ -69,16 +80,20 @@ def is_root_folder(path):
         if '.project' in [f.encode('utf-8').decode() for f in os.listdir(path)]:
             return True
 
+
 def project_file(path):
     return '%s/.project' % project_root(path)
+
 
 def project_root(path):
     if is_root_folder(path):
         return path
     return project_root(PureWindowsPath(path).parent)
 
+
 def get_project_folder_files_def_keywords_map(path):
     return get_subfolder_files_def_keywords_map(project_file(PureWindowsPath(path).parent))
+
 
 def get_subfolder_files_def_keywords_map(path):
     files = all_robot_files(path)
@@ -86,6 +101,7 @@ def get_subfolder_files_def_keywords_map(path):
     for f in files:
         file_keywords.setdefault(f, keywords(f))
     return file_keywords
+
 
 def get_subfolder_files_used_keywords_map(path):
     files = all_robot_files(path)
@@ -96,6 +112,7 @@ def get_subfolder_files_used_keywords_map(path):
             def_keywords.extend(extract_used_keywords(statement))
         file_keywords.setdefault(f, def_keywords)
     return file_keywords
+
 
 def extract_used_keywords(tokens):
     """
@@ -163,8 +180,10 @@ def extract_used_keywords(tokens):
             ret.extend(tokens[1:])
     return ret
 
+
 def normalize_name(string):
     return string.replace(" ", "").replace("_", "").lower()
+
 
 def statements(file):
     suite = RobotFactory(file)
@@ -183,12 +202,14 @@ def statements(file):
                     ret.append(statement)
     return ret
 
+
 def keywords(file):
     rbfile = RobotFactory(file)
     ret = []
     for keyword in rbfile.walk(Keyword):
         ret.append(keyword)
     return ret
+
 
 def same(keyword_def, keyword_use):
     """
@@ -214,13 +235,20 @@ def same(keyword_def, keyword_use):
     False
     >>> same('.', '.')
     True
+    >>> same('Action', None)
+    False
     """
     try:
+        if keyword_def != keyword_use and (keyword_def == None or keyword_use == None):
+            return False
         ndef = normalize_name(keyword_def)
         nuse = normalize_name(keyword_use)
-        return re.match("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(ndef)), nuse) != None or re.match("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(nuse)), ndef) != None
+        if ('{' in ndef and '}' in ndef) or ('{' in nuse and '}' in nuse):
+            return re.match("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(ndef)), nuse) != None or re.match("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(nuse)), ndef) != None
+        return ndef == nuse
     except:
         raise Exception((keyword_def, keyword_use))
+
 
 def keyword_in_keywordslist(keyword, keywords):
     for k in keywords:
@@ -228,12 +256,25 @@ def keyword_in_keywordslist(keyword, keywords):
             return True
     return False
 
+
+metas = None
+def get_metas(path):
+    global metas
+    if metas == None:
+        metas = project_meta(path)
+    return metas
+
+
+file_keywords = None
+
 class MoveKeyword(ResourceRule):
 
     severity = WARNING
 
     def apply(self, resource):
-        file_keywords = get_subfolder_files_used_keywords_map(resource.path)  # TODO resource.path -> project_root(resource.path)
+        global file_keywords
+        if file_keywords == None:
+            file_keywords = get_subfolder_files_used_keywords_map(resource.path)
         for keyword in resource.keywords:
             self_usage = keyword_in_keywordslist(keyword.name, file_keywords[resource.path])
             fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if keyword_in_keywordslist(keyword.name, use_keywords)]
@@ -247,17 +288,24 @@ class MoveKeyword(ResourceRule):
             if len(fk_used_keyword) > 1 and os.path.normpath(common_path) != os.path.normpath(os.path.dirname(resource.path)) and os.path.isdir(common_path) and not(self_usage):
                 self.report(keyword, 'Move the keyword to folder `%s`' % (os.path.relpath(common_path,  os.path.dirname(resource.path))), keyword.linenumber)
 
+
 class UnusedKeyword(GeneralRule):
 
     severity = WARNING
 
-    def apply(self, resource):
-        file_keywords = get_subfolder_files_used_keywords_map(project_root(resource.path))
-        for keyword in resource.keywords:
-            self_usage = keyword_in_keywordslist(keyword.name, file_keywords[resource.path])
-            fk_used_keyword = [(f, use_keywords) for f, use_keywords in file_keywords.items() if keyword_in_keywordslist(keyword.name, use_keywords)]
-            if (isinstance(resource, SuiteFile) and not(self_usage)) or len(fk_used_keyword) == 0:
-                self.report(keyword, 'Unused Keyword', keyword.linenumber)
+    def apply(self, rbfile):
+        metas = get_metas(rbfile.path)
+        current = next(filter(lambda x: x.source == rbfile.path, metas))
+        for d in current.defs:
+            uses = []
+            for meta in metas:
+                if meta.source != rbfile.path:
+                    uses.extend(meta.uses)
+            if any(same(d['name'], use) for use in uses) or any(same(d['name'], use) for use in current.uses):
+                continue
+            else:
+                self.report(rbfile, 'Unused Keyword', d['line'])
+
 
 class DuplicatedKeyword(GeneralRule):
 
@@ -279,7 +327,9 @@ class DuplicatedKeyword(GeneralRule):
         return True
 
     def apply(self, rbfile):
-        file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)
+        global file_keywords
+        if file_keywords == None:
+            file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)
         for keyword in rbfile.keywords:
             for f, ks in file_keywords.items():
                 if f.endswith('\\test_automation\\Keywords.txt') or f.endswith('\\test_automation\\End-to-end test\\Keywords.txt') or '\\PageObjects\\' in f or '\\End-to-end test\\Capacity' in f or '\\End-to-end test\\Plan to decomm' in f or '\\End-to-end test\\Change Management' in f or '\\DCT-extra issues\\' in f or '\\DCT-14884 ' in f or '\\DCT-14886 ' in f:
@@ -294,6 +344,7 @@ class DuplicatedKeyword(GeneralRule):
                             self.report(keyword, 'Duplicated Keyword (name): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
                     elif self.same_statements(k.statements, keyword.statements):
                         self.report(keyword, 'Duplicated Keyword (impl): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
+
 
 if __name__ == "__main__":
     import doctest
