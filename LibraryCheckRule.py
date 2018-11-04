@@ -133,7 +133,7 @@ class MoveKeyword(GeneralRule):
         metas = get_metas(rf_file.path)
         current = next(filter(lambda x: x.source == rf_file.path, metas))
         for keyword, values in current.defs.items():
-            used_metas = [meta for meta in metas if keyword in meta.uses.keys()]
+            used_metas = [meta for meta in metas if any([same(keyword, k) for k in meta.uses.keys()])]
             self_usage = any(same(keyword, used) for used in current.uses.keys())
 
             # Move the keyword to a file
@@ -193,7 +193,7 @@ class DuplicatedKeyword(GeneralRule):
         file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)
         for keyword in rbfile.keywords:
             for f, ks in file_keywords.items():
-                if f.endswith('\\test_automation\\Keywords.txt') or f.endswith('\\test_automation\\End-to-end test\\Keywords.txt') or '\\PageObjects\\' in f or '\\End-to-end test\\Capacity' in f or '\\End-to-end test\\Plan to decomm' in f or '\\End-to-end test\\Change Management' in f or '\\DCT-extra issues\\' in f or '\\DCT-14884 ' in f or '\\DCT-14886 ' in f:
+                if f.endswith('\\test_automation\\Keywords.txt') or '\\DCT-extra issues\\' in f or '\\PageObjects\\' in f:
                     continue
                 if f == rbfile.path:
                     continue
@@ -204,7 +204,7 @@ class DuplicatedKeyword(GeneralRule):
                         else:
                             self.report(keyword, 'Duplicated Keyword (name): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
                     elif self.same_statements(k.statements, keyword.statements):
-                        self.report(keyword, 'Duplicated Keyword (impl): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
+                        self.report(keyword, 'Duplicated Keyword (impl): %s:%d [%s]' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber, k.name), keyword.linenumber)
 
 
 if __name__ == "__main__":

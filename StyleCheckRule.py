@@ -96,7 +96,7 @@ class AssignmentStyle(GeneralRule):
         elif isinstance(statement, Row): # Variable Table
             variable = statement[0]
         linenumber = line_number(statement)
-        if variable != None:
+        if variable != None and not variable.startswith('#') and not variable == '...':
             if not variable.endswith('='):
                 self.report(obj, 'Add an assignment operator `=` after the variable', linenumber)
             if variable.endswith('}='):
