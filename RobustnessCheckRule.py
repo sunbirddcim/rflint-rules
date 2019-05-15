@@ -8,6 +8,11 @@ def check(self, obj, statement):
         elif is_wait_until_keyword(statement):
             if not any([token.startswith('timeout') for token in statement[2:]]):
                 self.report(obj, 'Missing timeout argument?', statement.startline)
+            if not any([token.startswith('error') for token in statement[2:]]):
+                self.report(obj, 'Missing error argument?', statement.startline)
+            else:
+                if 'should' not in [arg for arg in statement[2:] if arg.startswith('error')][0]:
+                    self.report(obj, 'Error message should use template \'ooo should xxx\'', statement.startline)
         elif statement[1].lower() == 'sleep':
             self.report(obj, 'DO NOT USE SLEEP!', statement.startline)
 

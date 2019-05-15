@@ -125,7 +125,7 @@ class UseCamelCaseKeyword(GeneralRule):
         linenumber = line_number(statement)
         if tokens[0].startswith('#'):
             return
-        if any(len(token) > 0 and token != "dcTrack" and token[0].isalpha() and not token[0].isupper() for token in tokens):
+        if any(len(token) > 0 and token not in ["dcTrack", "eAsset"] and token[0].isalpha() and not token[0].isupper() for token in tokens):
             self.report(obj, 'Keyword name is not Camel Case.', linenumber)
 
     def apply(self, robotfile):

@@ -1,4 +1,4 @@
-from rflint.common import GeneralRule, WARNING, ERROR
+from rflint.common import GeneralRule, WARNING, ERROR, IGNORE
 from rflint.parser import SettingTable, TestcaseTable
 from rflint import RobotFactory, Keyword
 from pathlib import PureWindowsPath
@@ -127,7 +127,7 @@ def get_metas(path):
 
 class MoveKeyword(GeneralRule):
 
-    severity = ERROR
+    severity = IGNORE
 
     def apply(self, rf_file):
         metas = get_metas(rf_file.path)
