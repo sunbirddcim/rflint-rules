@@ -1,5 +1,6 @@
 from rflint.common import SuiteRule, KeywordRule, WARNING, ERROR
 from rflint.parser import SettingTable, TestcaseTable
+import re
 
 def check(self, obj, statement):
     if len(statement) > 1:
@@ -15,6 +16,15 @@ def check(self, obj, statement):
                     self.report(obj, 'Error message should use template \'ooo should xxx\'', statement.startline)
         elif statement[1].lower() == 'sleep':
             self.report(obj, 'DO NOT USE SLEEP!', statement.startline)
+        xpath = [arg for arg in statement[2:] if arg.startswith('xpath')]
+        if len(xpath) > 0:
+            if not re.search('@id=.*', xpath[0]):
+                if not statement[-1].startswith('# TODO [ID]'):
+                    self.report(obj, 'use @id to locate element or mark # TODO [ID]', statement.startline)
+            if re.search('@class=.*', xpath[0]):
+                self.report(obj, 'use contains(@class, ...)', statement.startline)
+            if re.search('text()\\s*=', xpath[0]):
+                self.report(obj, 'use normalize-space(text())=', statement.startline)
 
 def check_missing_waiting(self, obj, name, statements):
     previous = ['']
