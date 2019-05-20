@@ -11,16 +11,10 @@ def check(self, obj, statement):
                 self.report(obj, 'Missing timeout argument?', statement.startline)
             if not any([token.startswith('error') for token in statement[2:]]):
                 self.report(obj, 'Missing error argument?', statement.startline)
-            else:
-                if 'should' not in [arg for arg in statement[2:] if arg.startswith('error')][0]:
-                    self.report(obj, 'Error message should use template \'ooo should xxx\'', statement.startline)
         elif statement[1].lower() == 'sleep':
             self.report(obj, 'DO NOT USE SLEEP!', statement.startline)
         xpath = [arg for arg in statement[2:] if arg.startswith('xpath')]
         if len(xpath) > 0:
-            if not re.search('@id=.*', xpath[0]):
-                if not statement[-1].startswith('# TODO [ID]'):
-                    self.report(obj, 'use @id to locate element or mark # TODO [ID]', statement.startline)
             if re.search('@class=.*', xpath[0]):
                 self.report(obj, 'use contains(@class, ...)', statement.startline)
             if re.search('text()\\s*=', xpath[0]):
