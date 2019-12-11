@@ -140,7 +140,7 @@ class UseCamelCaseKeyword(GeneralRule):
             for statement in keyword.statements:
                 self.report_if_not_camel_case(keyword, statement)
 
-class TrailingWhiteSpace(GeneralRule):
+class TrailingWhiteSpaceIgnoreCarriegeReturn(GeneralRule):
 
     severity = WARNING
 
