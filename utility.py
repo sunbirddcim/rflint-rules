@@ -123,7 +123,7 @@ def extract_used_keywords(tokens):
     ['Wait Until Keyword Succeeds', 'Action']
 
     if else
-    >>> extract_used_keywords(['Run Keyword If', '${cond}', 'Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'ELSE IF', '${cond}', 'Run Keywords', 'Action C', 'AND', 'Action D'])
+    >>> extract_used_keywords(['Run Keyword If', '${cond}', 'Run Keywords', 'Action A', 'arg1', 'arg2', 'AND', 'Action B', 'ELSE IF', '${cond}', 'Run Keywords', 'Action C', 'AND', 'Action D'])
     ['Run Keyword If', 'Run Keywords', 'Action A', 'Action B', 'Run Keywords', 'Action C', 'Action D']
     >>> extract_used_keywords(['...', 'ELSE', 'Run Keywords'])
     ['Run Keywords']
@@ -147,10 +147,12 @@ def extract_used_keywords(tokens):
     ['Run Keywords', 'Action A', 'Action C']
     >>> extract_used_keywords(['...', 'AND', 'Action B'])
     ['Action B']
-    >>> extract_used_keywords(['Run Keywords', 'Action A', 'arg1', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
+    >>> extract_used_keywords(['Run Keywords', 'Action A', 'arg1', 'arg2', 'AND', 'Action B', 'AND', 'Action C', 'arg2'])
     ['Run Keywords', 'Action A', 'Action B', 'Action C']
     >>> extract_used_keywords(['Run Keywords', 'Run Keyword If Test Passed', 'Action A', 'AND', 'Run Keyword If Test Failed', 'Action B', 'AND', 'Action C'])
     ['Run Keywords', 'Run Keyword If Test Passed', 'Action A', 'Run Keyword If Test Failed', 'Action B', 'Action C']
+    >>> extract_used_keywords(['Run Keywords', 'Action A', '${arg}'])
+    ['Run Keywords', 'Action A']
     """
     ret = []
     if len(tokens) == 0 or tokens[0].startswith('#') or tokens[0] in ['[Documentation]', '[Arguments]', '[Tags]', '[Return]', '[Timeout]', ':FOR']:
@@ -191,7 +193,7 @@ def extract_used_keywords(tokens):
             ret.extend(extract_used_keywords(tokens[itokens[-1]+1:]))
         else:
             ret.extend(tokens[1:])
-    return ret
+    return [e for e in ret if not (e.startswith("${") and e.endswith("}"))]
 
 
 def is_root_folder(path):
