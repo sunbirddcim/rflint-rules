@@ -26,7 +26,7 @@ def extract_name(statement):
     for token in statement:
         if token in ['', '\\']:
             continue
-        if not re.match(r'[@$&]\{[^\}]+\}.*|^\[.+\]', token):
+        if not re.match(r'[@$&]\{[^\}]+\}.*|^\[(Template|template)\]', token):
             for bdd_token in ['given', 'when', 'then']:
                 if token.lower().startswith(bdd_token):
                     return token[len(bdd_token):].strip()
