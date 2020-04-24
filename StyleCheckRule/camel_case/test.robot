@@ -26,6 +26,11 @@ Resource
     ${expected} =    Evaluate    '\\n'.join(${expected})
     Check File    res.txt    ${expected}
 
+Template
+    ${expected} =    Create List    W: 3, 0: Keyword name is not Camel Case. (UseCamelCaseKeyword)
+    ${expected} =    Evaluate    ''.join(${expected})
+    Check File    template.txt    ${expected}
+
 *** Keywords ***
 Check File
     [Arguments]    ${file}    ${message}

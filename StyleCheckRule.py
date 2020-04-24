@@ -26,7 +26,7 @@ def extract_name(statement):
     for token in statement:
         if token in ['', '\\']:
             continue
-        if not re.match(r'[@$&]\{[^\}]+\}.*', token):
+        if not re.match(r'[@$&]\{[^\}]+\}.*|^\[.+\]', token):
             for bdd_token in ['given', 'when', 'then']:
                 if token.lower().startswith(bdd_token):
                     return token[len(bdd_token):].strip()
@@ -65,11 +65,16 @@ def last_variable(statement):
         else:
             return variable
 
-def is_template(suite):
+def is_test_template(suite):
     for table in suite.tables:
         if isinstance(table, SettingTable):
             if any([row[0].lower() == 'test template' for row in table.rows]):
                 return True
+    return False
+
+def is_template(testcase):
+    if any([statement[1].lower() == '[template]' for statement in testcase.statements if not (len(statement) == 1 and statement[0] == '')]):
+        return True
     return False
 
 class UseLogoff(SuiteRule):
@@ -105,7 +110,7 @@ class AssignmentStyle(GeneralRule):
     def apply(self, robotfile):
         for table in robotfile.tables:
             if isinstance(table, TestcaseTable):
-                if not is_template(robotfile):
+                if not is_test_template(robotfile):
                     for testcase in table.testcases:
                         for statement in testcase.statements:
                             self.report_if_should_format_variable(robotfile, statement)
@@ -130,11 +135,14 @@ class UseCamelCaseKeyword(GeneralRule):
 
     def apply(self, robotfile):
         for table in robotfile.tables:
-            if not is_template(robotfile):
+            if not is_test_template(robotfile):
                 if isinstance(table, TestcaseTable):
                     for testcase in table.testcases:
-                        for statement in testcase.statements:
-                            self.report_if_not_camel_case(testcase, statement)
+                        if not is_template(testcase):
+                            for statement in testcase.statements:
+                                self.report_if_not_camel_case(testcase, statement)
+                        else:
+                            self.report_if_not_camel_case(testcase, testcase.statements[0])
         for keyword in robotfile.keywords:
             self.report_if_not_camel_case(keyword, keyword)
             for statement in keyword.statements:

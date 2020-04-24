@@ -1,0 +1,5 @@
+*** Test Cases ***
+template
+    [Template]    Foo template
+    foo
+    foo
