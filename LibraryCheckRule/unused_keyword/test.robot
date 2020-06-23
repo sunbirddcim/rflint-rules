@@ -12,7 +12,7 @@ Case 1
     Check File    case1_run_keywords/suite.txt    ${expected}
 
 Case 2
-    Check File    case2_bdd/suite.txt    W: 20, 0: Unused Keyword (UnusedKeyword)
+    Check File    case2_bdd/suite.txt    W: 26, 0: Unused Keyword (UnusedKeyword)
 
 *** Keywords ***
 Check File
