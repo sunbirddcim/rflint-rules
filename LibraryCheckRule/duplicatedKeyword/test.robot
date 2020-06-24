@@ -5,7 +5,7 @@ Library    OperatingSystem
 Case 1
     ${expected} =    Create List
     ...    W: 2, 0: Duplicated Keyword (name and impl): res2.txt:2 (DuplicatedKeyword)
-    ...    W: 5, 0: Duplicated Keyword (impl): res2.txt:2 (DuplicatedKeyword)
+    ...    W: 5, 0: Duplicated Keyword (impl): res2.txt:2 [Action 1] (DuplicatedKeyword)
     ...    W: 5, 0: Duplicated Keyword (name): res2.txt:5 (DuplicatedKeyword)
     ${expected} =    Evaluate    '\\n'.join(${expected})
     Check File    case1_same_folder/res1.txt    ${expected}
@@ -13,7 +13,7 @@ Case 1
 Case 2
     ${expected} =    Create List
     ...    W: 2, 0: Duplicated Keyword (name and impl): sub\\res2.txt:2 (DuplicatedKeyword)
-    ...    W: 5, 0: Duplicated Keyword (impl): sub\\res2.txt:2 (DuplicatedKeyword)
+    ...    W: 5, 0: Duplicated Keyword (impl): sub\\res2.txt:2 [Action 1] (DuplicatedKeyword)
     ...    W: 5, 0: Duplicated Keyword (name): sub\\res2.txt:5 (DuplicatedKeyword)
     ${expected} =    Evaluate    '\\n'.join(${expected})
     Check File    case2_sub_folder/res1.txt    ${expected}
@@ -21,7 +21,7 @@ Case 2
 Case 3
     ${expected} =    Create List
     ...    W: 2, 0: Duplicated Keyword (name and impl): ..\\sub2\\res2.txt:2 (DuplicatedKeyword)
-    ...    W: 5, 0: Duplicated Keyword (impl): ..\\sub2\\res2.txt:2 (DuplicatedKeyword)
+    ...    W: 5, 0: Duplicated Keyword (impl): ..\\sub2\\res2.txt:2 [Action 1] (DuplicatedKeyword)
     ...    W: 5, 0: Duplicated Keyword (name): ..\\sub2\\res2.txt:5 (DuplicatedKeyword)
     ${expected} =    Evaluate    '\\n'.join(${expected})
     Check File    case3_sibling/sub1/res1.txt    ${expected}
