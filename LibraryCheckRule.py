@@ -153,14 +153,14 @@ class UnusedKeyword(GeneralRule):
     severity = ERROR
 
     def apply(self, rf_file):
-        metas = get_metas(rf_file.path)
-        current = next(filter(lambda x: x.source == rf_file.path, metas))
+        rfMetas = get_metas(rf_file.path)
+        current = next(filter(lambda meta: meta.source == rf_file.path, rfMetas))
         for keyword, values in current.defs.items():
             if current.is_test_data:
                 if self.not_used(keyword, [current]):
                     self.report(rf_file, 'Unused Keyword', values['line'])
             else:
-                if self.not_used(keyword, metas):
+                if self.not_used(keyword, rfMetas):
                     self.report(rf_file, 'Unused Keyword', values['line'])
 
     def not_used(self, keyword, metas):
