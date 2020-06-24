@@ -18,7 +18,7 @@ Case 5
     Check File    case5/keywords.txt    ${EMPTY}
 
 Case 6
-    Check File    case6/keywords.txt    W: 2, 0: Move the keyword to folder `suite1` (MoveKeyword)
+    Check File    case6/keywords.txt    W: 2, 0: Move the keyword to folder `suite1\\keywords.txt` (MoveKeyword)
 
 Case 7
     Check File    case7/keywords.txt    ${EMPTY}
