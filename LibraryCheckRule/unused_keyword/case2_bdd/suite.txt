@@ -1,18 +1,48 @@
 *** Test Cases ***
-BDD
-    Given    Action 1
-    When    Action 2
-    Then    Action 3
+BDD with four whitespaces behind token
+    Given    BDD 1
+    When    BDD 2
+    Then    BDD 3
+    And    BDD 5
+
+BDD with one whitespace behind token
+    Given BDD 6
+    And BDD 7
+    When BDD 8
+    And BDD 9
+    Then BDD 10
+    And BDD 11
 
 *** Keywords ***
-Action 1
+BDD 1
     Comment
 
-Action 4
+BDD 2
     Comment
 
-Action 2
+BDD 3
     Comment
 
-Action 3
+BDD 4
+    Comment
+
+BDD 5
+    Comment
+
+BDD 6
+    Comment
+
+BDD 7
+    Comment
+
+BDD 8
+    Comment
+
+BDD 9
+    Comment
+
+BDD 10
+    Comment
+
+BDD 11
     Comment

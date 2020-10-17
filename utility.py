@@ -69,7 +69,7 @@ def extract_name(tokens):
         return extract_name(tokens[1:])
     if re.match(r'[@$&]\{[^\}]+\}.*', tokens[0]):
         return extract_name(tokens[1:])
-    for bdd_token in ['given ', 'when ', 'then ']:
+    for bdd_token in ['given ', 'when ', 'then ', 'and ']:
         if tokens[0].lower().startswith(bdd_token):
             return tokens[0][len(bdd_token):].strip()
     return tokens[0]
@@ -157,7 +157,7 @@ def extract_used_keywords(tokens):
     ret = []
     if len(tokens) == 0 or tokens[0].startswith('#') or tokens[0] in ['[Documentation]', '[Arguments]', '[Tags]', '[Return]', '[Timeout]', ':FOR']:
         return ret
-    if tokens[0].lower() in ['\\', '', '[teardown]', '[template]', '[setup]', 'given', 'when', 'then'] or re.match(r'[@$&]\{[^\}]+\}.*', tokens[0].lower()):
+    if tokens[0].lower() in ['\\', '', '[teardown]', '[template]', '[setup]', 'given', 'when', 'then', 'and'] or re.match(r'[@$&]\{[^\}]+\}.*', tokens[0].lower()):
         return extract_used_keywords(tokens[1:])
     if tokens[:2] == ['...', 'ELSE'] or tokens[:2] == ['...', 'AND']:
         return extract_used_keywords(tokens[2:])
