@@ -1,1 +1,1 @@
-robot -d out -F robot .
+robot -d out -F robot -e deprecated .

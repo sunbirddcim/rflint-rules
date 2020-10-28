@@ -208,7 +208,7 @@ def is_root_folder(path):
 
 
 def project_file(path):
-    return '%s/.project' % project_root(path)
+    return os.path.join(project_root(path), '.project')
 
 
 def project_root(path):
