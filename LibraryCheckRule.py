@@ -193,8 +193,6 @@ class DuplicatedKeyword(GeneralRule):
     def compare_with_same_implement_length(self, keywords, line_count):
 
         def set_duplicate_keyword_implement_message(duplicate_keywords):
-            if len(duplicate_keywords) == 1:
-                return
             for keyword in duplicate_keywords:
                 setattr(keyword, 'duplicate_implement', [other_keyword for other_keyword in duplicate_keywords if (other_keyword != keyword and other_keyword.parent.path != keyword.parent.path)])
 
@@ -209,13 +207,12 @@ class DuplicatedKeyword(GeneralRule):
                 yield last, True
             
             def compare_or_set_message(keywords):
-                if line_index + 1 == line_count:
-                    set_duplicate_keyword_implement_message(keywords)
-                else:
-                    separe_and_compare_line_by_line(keywords, line_index + 1)
+                if len(keywords) > 1:
+                    if line_index + 1 == line_count:
+                        set_duplicate_keyword_implement_message(keywords)
+                    else:
+                        separe_and_compare_line_by_line(keywords, line_index + 1)
 
-            if len(to_be_compare_keywords) == 1:
-                return
             compare_list = []
 
             for keyword, is_last in lookahead(to_be_compare_keywords):
@@ -229,7 +226,6 @@ class DuplicatedKeyword(GeneralRule):
                 if is_last:
                     compare_or_set_message(compare_list)
         
-        keywords = sorted(keywords, key=lambda x:[row.raw_text for row in x.rows])
         separe_and_compare_line_by_line(keywords, 0)
 
     def compare_with_same_keyword_name_length(self, keywords):
@@ -286,6 +282,7 @@ class DuplicatedKeyword(GeneralRule):
             same_implement_length_keywords = list(filter(lambda x:len(x.rows)==length, all_keywords))
             if len(same_implement_length_keywords) <= 1:
                 continue
+            same_implement_length_keywords = sorted(same_implement_length_keywords, key=lambda x:[row.raw_text for row in x.rows])
             threads.append(threading.Thread(target=self.compare_with_same_implement_length, args=(same_implement_length_keywords, length,)))
             threads[len(threads)-1].start()
         
