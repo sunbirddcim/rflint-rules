@@ -7,6 +7,7 @@ import os
 import sys
 sys.path.append(os.path.dirname(__file__))
 from utility import project_meta
+import threading
 
 
 def extract_max_same_path(files):
@@ -174,37 +175,154 @@ class DuplicatedKeyword(GeneralRule):
 
     severity = WARNING
 
-    def same_statements(self, statements1, statements2):
-        while [''] in statements1:
-            statements1.remove([''])
-        while [''] in statements2:
-            statements2.remove([''])
-        if len(statements1) != len(statements2):
-            return False
-        for i, s in enumerate(statements1):
-            if len(statements2[i]) != len(s):
-                return False
-            for j, t in enumerate(s):
-                if t != statements2[i][j]:
-                    return False
-        return True
+    def __init__(self, controller, severity=None):
+        super().__init__(controller, severity=severity)
+        self.file_with_keywords = None
+        self.all_keywords = []
+    
+    def append_to_all_keywords_list(self):
+
+        def remove_blank_line(keyword):
+            keyword.rows = [row for row in keyword.rows if row.raw_text != '']
+
+        for file, keywords in self.file_with_keywords.items():
+            for keyword in keywords:
+                remove_blank_line(keyword)
+                self.all_keywords.append(keyword)
+
+    def compare_with_same_implement_length(self, keywords, line_count):
+
+        def set_duplicate_keyword_implement_message(duplicate_keywords):
+            for keyword in duplicate_keywords:
+                setattr(keyword, 'duplicate_implement', [other_keyword for other_keyword in duplicate_keywords if (other_keyword != keyword and other_keyword.parent.path != keyword.parent.path)])
+
+        def separe_and_compare_line_by_line(to_be_compare_keywords, line_index):
+
+            def lookahead(iterable):
+                it = iter(iterable)
+                last = next(it)
+                for val in it:
+                    yield last, False
+                    last = val
+                yield last, True
+            
+            def compare_or_set_message(keywords):
+                if len(keywords) > 1:
+                    if line_index + 1 == line_count:
+                        set_duplicate_keyword_implement_message(keywords)
+                    else:
+                        separe_and_compare_line_by_line(keywords, line_index + 1)
+
+            compare_list = []
+
+            for keyword, is_last in lookahead(to_be_compare_keywords):
+                if len(compare_list) == 0:
+                    compare_list.append(keyword)
+                elif keyword.rows[line_index].raw_text == compare_list[0].rows[line_index].raw_text:
+                    compare_list.append(keyword)
+                else:
+                    compare_or_set_message(compare_list)
+                    compare_list = [keyword]
+                if is_last:
+                    compare_or_set_message(compare_list)
+        
+        separe_and_compare_line_by_line(keywords, 0)
+
+    def compare_with_same_keyword_name_length(self, keywords):
+
+        def set_duplicate_keyword_name_message(duplicate_keywords):
+            for keyword in duplicate_keywords:
+                setattr(keyword, 'duplicate_name', [other_keyword for other_keyword in duplicate_keywords if (other_keyword != keyword and other_keyword.parent.path != keyword.parent.path)])
+
+        compare_list = []
+        current_duplicate_name = ''
+
+        keywords = iter(keywords)
+        while True:
+            try:
+                current_keyword = next(keywords)
+                if current_keyword.name == current_duplicate_name:
+                    compare_list.append(current_keyword)
+                else:
+                    if len(compare_list) > 1:
+                        set_duplicate_keyword_name_message(compare_list)
+                    compare_list = [current_keyword]
+                    current_duplicate_name = current_keyword.name
+            except StopIteration:
+                if len(compare_list) > 1:
+                    set_duplicate_keyword_name_message(compare_list)
+                break
+
+    def sorted_by_name_and_compare(self):
+        all_keywords = sorted(self.all_keywords, key=lambda x:len(x.name))
+
+        min_keywordNameLen = len(all_keywords[0].name)
+        max_keywordNameLen = len(all_keywords[-1].name)
+
+        threads = []
+        for length in range(min_keywordNameLen, max_keywordNameLen+1):
+            same_name_length_keywords = list(filter(lambda keyword: len(keyword.name)==length, all_keywords))
+            if len(same_name_length_keywords) <= 1:
+                continue
+            same_name_length_keywords = sorted(same_name_length_keywords, key=lambda x:x.name)
+            threads.append(threading.Thread(target=self.compare_with_same_keyword_name_length, args=(same_name_length_keywords,)))
+            threads[len(threads)-1].start()
+        
+        for index in range(len(threads)):
+            threads[index].join()
+
+    def sorted_by_impl_length_and_compare(self):
+        all_keywords = sorted(self.all_keywords, key=lambda x:len(x.rows))
+
+        min_keywordImplLen = len(all_keywords[0].rows)
+        max_keywordImplLen = len(all_keywords[-1].rows)
+
+        threads = []
+        for length in range(min_keywordImplLen, max_keywordImplLen+1):
+            same_implement_length_keywords = list(filter(lambda x:len(x.rows)==length, all_keywords))
+            if len(same_implement_length_keywords) <= 1:
+                continue
+            same_implement_length_keywords = sorted(same_implement_length_keywords, key=lambda x:[row.raw_text for row in x.rows])
+            threads.append(threading.Thread(target=self.compare_with_same_implement_length, args=(same_implement_length_keywords, length,)))
+            threads[len(threads)-1].start()
+        
+        for index in range(len(threads)):
+            threads[index].join()
 
     def apply(self, rbfile):
-        file_keywords = get_project_folder_files_def_keywords_map(rbfile.path)
-        for keyword in rbfile.keywords:
-            for f, ks in file_keywords.items():
-                if f.endswith('\\test_automation\\Keywords.txt') or '\\DCT-extra issues\\' in f or '\\PageObjects\\' in f:
-                    continue
-                if f == rbfile.path:
-                    continue
-                for k in ks:
-                    if same(k.name, keyword.name):
-                        if self.same_statements(k.statements, keyword.statements):
-                            self.report(keyword, 'Duplicated Keyword (name and impl): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
+
+        if self.file_with_keywords is None:
+
+            self.file_with_keywords = get_project_folder_files_def_keywords_map(rbfile.path)
+            self.append_to_all_keywords_list()
+            
+            threads = []
+            threads.append(threading.Thread(target=self.sorted_by_name_and_compare))
+            threads.append(threading.Thread(target=self.sorted_by_impl_length_and_compare))
+
+            threads[0].start()
+            threads[1].start()
+
+            for index in range(len(threads)):
+                threads[index].join()
+
+        for keyword in self.file_with_keywords[rbfile.path]:
+            if hasattr(keyword, 'duplicate_implement'):
+                if hasattr(keyword, 'duplicate_name'):
+                    for duplicate_keyword in keyword.duplicate_implement:
+                        if duplicate_keyword in keyword.duplicate_name:
+                            self.report(keyword, 'Duplicated Keyword (name and impl): %s:%d' % (os.path.relpath(duplicate_keyword.parent.path, os.path.dirname(rbfile.path)), duplicate_keyword.linenumber), keyword.linenumber)
                         else:
-                            self.report(keyword, 'Duplicated Keyword (name): %s:%d' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber), keyword.linenumber)
-                    elif self.same_statements(k.statements, keyword.statements):
-                        self.report(keyword, 'Duplicated Keyword (impl): %s:%d [%s]' % (os.path.relpath(f, os.path.dirname(rbfile.path)), k.linenumber, k.name), keyword.linenumber)
+                            self.report(keyword, 'Duplicated Keyword (impl): %s:%d [%s]' % (os.path.relpath(duplicate_keyword.parent.path, os.path.dirname(rbfile.path)), duplicate_keyword.linenumber, duplicate_keyword.name), keyword.linenumber)
+                    for duplicate_keyword in keyword.duplicate_name:
+                        if duplicate_keyword not in keyword.duplicate_implement:
+                            self.report(keyword, 'Duplicated Keyword (name): %s:%d' % (os.path.relpath(duplicate_keyword.parent.path, os.path.dirname(rbfile.path)), duplicate_keyword.linenumber), keyword.linenumber)
+                else:
+                    for duplicate_keyword in keyword.duplicate_implement:
+                        self.report(keyword, 'Duplicated Keyword (impl): %s:%d [%s]' % (os.path.relpath(duplicate_keyword.parent.path, os.path.dirname(rbfile.path)), duplicate_keyword.linenumber, duplicate_keyword.name), keyword.linenumber)
+            elif hasattr(keyword, 'duplicate_name'):
+                for duplicate_keyword in keyword.duplicate_name:
+                    self.report(keyword, 'Duplicated Keyword (name): %s:%d' % (os.path.relpath(duplicate_keyword.parent.path, os.path.dirname(rbfile.path)), duplicate_keyword.linenumber), keyword.linenumber)
 
 
 if __name__ == "__main__":
