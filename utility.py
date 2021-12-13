@@ -1,6 +1,7 @@
 from rflint import RobotFactory, Keyword
 from rflint.parser import SettingTable, TestcaseTable
-from pathlib import PureWindowsPath
+import platform
+from pathlib import PureWindowsPath, PurePosixPath
 import os
 import time
 import re
@@ -214,12 +215,18 @@ def project_file(path):
 def project_root(path):
     if is_root_folder(path):
         return path
-    return project_root(PureWindowsPath(path).parent)
+    if platform.system() == "Linux":
+        return project_root(PurePosixPath(path).parent)
+    else:
+        return project_root(PureWindowsPath(path).parent)
 
 
 def all_robot_files(path):
     ret = []
-    p = PureWindowsPath(path)
+    if platform.system() == "Linux":
+        p = PurePosixPath(path)
+    else:
+        p = PureWindowsPath(path)
     for root, _, files in os.walk(p.parents[0]):
         for f in files:
             if f.endswith('.txt') or f.endswith('.robot'):
@@ -228,9 +235,12 @@ def all_robot_files(path):
 
 
 def project_meta(path):
-
     ret = []
-    for rfile in all_robot_files(project_file(PureWindowsPath(path).parent)):
+    if platform.system() == "Linux":
+        parrentFile = PurePosixPath(path).parent
+    else:
+        parrentFile = PureWindowsPath(path).parent
+    for rfile in all_robot_files(project_file(parrentFile)):
         rf = RobotFactory(rfile)
         rfmeta = RFMeta(rfile)
         for keyword in rf.walk(Keyword):
