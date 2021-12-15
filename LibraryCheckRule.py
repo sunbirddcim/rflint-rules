@@ -65,10 +65,8 @@ def project_root(path):
 def get_project_folder_files_def_keywords_map(path):
     if platform.system() == "Linux":
         return get_subfolder_files_def_keywords_map(project_file(PurePosixPath(path).parent))
-        
     else:
         return get_subfolder_files_def_keywords_map(project_file(PureWindowsPath(path).parent))
-    return 
 
 
 def get_subfolder_files_def_keywords_map(path):
