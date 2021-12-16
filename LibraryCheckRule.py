@@ -1,7 +1,8 @@
 from rflint.common import GeneralRule, WARNING, ERROR, IGNORE
 from rflint.parser import SettingTable, TestcaseTable
 from rflint import RobotFactory, Keyword
-from pathlib import PureWindowsPath
+import platform
+from pathlib import PureWindowsPath, PurePosixPath
 import re
 import os
 import sys
@@ -26,7 +27,10 @@ def extract_max_same_path(files):
 
 def all_robot_files(path):
     ret = []
-    p = PureWindowsPath(path)
+    if platform.system() == "Linux":
+        p = PurePosixPath(path)
+    else:
+        p = PureWindowsPath(path)
     for root, _, files in os.walk(p.parents[0]):
         for f in files:
             if f.endswith('.txt') or f.endswith('.robot'):
@@ -52,11 +56,17 @@ def project_file(path):
 def project_root(path):
     if is_root_folder(path):
         return path
-    return project_root(PureWindowsPath(path).parent)
+    if platform.system() == "Linux":
+        return project_root(PurePosixPath(path).parent)
+    else:
+        return project_root(PureWindowsPath(path).parent)
 
 
 def get_project_folder_files_def_keywords_map(path):
-    return get_subfolder_files_def_keywords_map(project_file(PureWindowsPath(path).parent))
+    if platform.system() == "Linux":
+        return get_subfolder_files_def_keywords_map(project_file(PurePosixPath(path).parent))
+    else:
+        return get_subfolder_files_def_keywords_map(project_file(PureWindowsPath(path).parent))
 
 
 def get_subfolder_files_def_keywords_map(path):
