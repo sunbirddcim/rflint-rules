@@ -11,7 +11,7 @@ def check(self, obj, statement):
                 self.report(obj, 'Missing timeout argument?', statement.startline)
             if not any([token.startswith('error') for token in statement[2:]]):
                 self.report(obj, 'Missing error argument?', statement.startline)
-        elif statement[1].lower() == 'sleep':
+        elif statement[1].lower() == 'sleep' and "reason=" not in statement[-1]:
             self.report(obj, 'DO NOT USE SLEEP!', statement.startline)
         xpath = [arg for arg in statement[2:] if arg.startswith('xpath')]
         if len(xpath) > 0:
