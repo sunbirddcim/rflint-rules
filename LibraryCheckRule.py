@@ -163,23 +163,69 @@ class UnusedKeyword(GeneralRule):
 
     severity = ERROR
 
+    def __init__(self, controller, severity=None):
+        super().__init__(controller, severity=severity)
+        self.rfMetas = None
+        self.file_with_keywords = None
+        self.all_keywords = []
+        self.unused_keywords = None
+
+    def append_to_all_keywords_list(self):
+        for file, keywords in self.file_with_keywords.items():
+            for keyword in keywords:
+                self.all_keywords.append(keyword)
+
+    def create_unused_keywords_list(self):
+        def find_used_keywords():
+            self.used_keywords = []
+            for meta in self.rfMetas:
+                for key in meta.uses.keys():
+                    self.used_keywords.append(key)
+            self.used_keywords = [keyword for keyword in self.used_keywords if not '=' in keyword]
+            self.used_keywords = list(dict.fromkeys(self.used_keywords))
+        
+        def find_unused_keywords_by_simple_compare():
+            self.unused_keywords = []
+            for keyword in self.all_keywords:
+                if not(keyword.name in self.used_keywords):
+                    self.unused_keywords.append(keyword.name)
+
+        def find_unused_keywords_by_regular_compare():
+            compared_keywords = self.unused_keywords
+            self.unused_keywords = []
+            for keyword in compared_keywords:
+                keyword_is_unused = True
+                for key in self.used_keywords:
+                    if same(keyword, key):
+                        keyword_is_unused = False
+                        break
+                if keyword_is_unused:
+                    self.unused_keywords.append(keyword)
+
+        find_used_keywords()
+        find_unused_keywords_by_simple_compare()
+        find_unused_keywords_by_regular_compare()
+
     def apply(self, rf_file):
-        rfMetas = get_metas(rf_file.path)
-        current = next(filter(lambda meta: meta.source == rf_file.path, rfMetas))
+        if self.rfMetas == None:
+            self.rfMetas = get_metas(rf_file.path)
+            self.file_with_keywords = get_project_folder_files_def_keywords_map(rf_file.path)
+            self.append_to_all_keywords_list()
+            self.create_unused_keywords_list()
+            
+        current = next(filter(lambda meta: meta.source == rf_file.path, self.rfMetas))
         for keyword, values in current.defs.items():
             if current.is_test_data:
                 if self.not_used(keyword, [current]):
                     self.report(rf_file, 'Unused Keyword', values['line'])
-            else:
-                if self.not_used(keyword, rfMetas):
-                    self.report(rf_file, 'Unused Keyword', values['line'])
-
+            elif keyword in self.unused_keywords:
+                self.report(rf_file, 'Unused Keyword', values['line'])
+    
     def not_used(self, keyword, metas):
         for meta in metas:
             if any(same(keyword, used) for used in meta.uses.keys()):
                 return False
         return True
-
 
 class DuplicatedKeyword(GeneralRule):
 
