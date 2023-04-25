@@ -191,16 +191,13 @@ class UnusedKeyword(GeneralRule):
                     self.unused_keywords.append(keyword.name)
 
         def find_unused_keywords_by_regular_compare():
-            compared_keywords = self.unused_keywords
+            compared_keywords = self.unused_keywords.copy()
             self.unused_keywords = []
             for keyword in compared_keywords:
-                keyword_is_unused = True
                 for key in self.used_keywords:
-                    if same(keyword, key):
-                        keyword_is_unused = False
+                    if not same(keyword, key):
+                        self.unused_keywords.append(keyword)
                         break
-                if keyword_is_unused:
-                    self.unused_keywords.append(keyword)
 
         find_used_keywords()
         find_unused_keywords_by_simple_compare()
