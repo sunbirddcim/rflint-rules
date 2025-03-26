@@ -176,7 +176,7 @@ def extract_used_keywords(tokens):
     if tokens[0].lower() in ['run keyword', 'run keyword and continue on failure', 'run keyword and ignore error',
                              'run keyword and return', 'run keyword and return status', 'run keyword if all critical tests passed',
                              'run keyword if all tests passed', 'run keyword if any critical tests failed', 'run keyword if any tests failed',
-                             'run keyword if test failed', 'run keyword if test passed', 'run keyword if timeout occurred', 'run setup only once']:
+                             'run keyword if test failed', 'run keyword if test passed', 'run keyword if timeout occurred', 'run setup only once', 'run teardown only once']:
         ret.extend(extract_used_keywords(tokens[1:]))
     elif tokens[0].lower() in ['run keyword and return if', 'run keyword and expect error', 'run keyword if',
                                'run keyword unless', 'keyword should succeed within a period']:
