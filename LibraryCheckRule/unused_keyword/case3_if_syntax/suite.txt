@@ -1,0 +1,22 @@
+*** Test Cases ***
+Inline If Should Count Keyword Usage
+    ${condition}=    Set Variable    ${True}
+    IF    ${condition}    Used In Inline If
+    IF    ${condition}
+        Used In Block If
+    ELSE
+        Used In Else Block
+    END
+
+*** Keywords ***
+Used In Inline If
+    No Operation
+
+Used In Block If
+    No Operation
+
+Used In Else Block
+    No Operation
+
+Truly Unused
+    No Operation

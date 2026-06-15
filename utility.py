@@ -154,12 +154,30 @@ def extract_used_keywords(tokens):
     ['Run Keywords', 'Run Keyword If Test Passed', 'Action A', 'Run Keyword If Test Failed', 'Action B', 'Action C']
     >>> extract_used_keywords(['Run Keywords', 'Action A', '${arg}'])
     ['Run Keywords', 'Action A']
+
+    robot framework if syntax
+    >>> extract_used_keywords(['IF', '${cond}', 'Action A'])
+    ['Action A']
+    >>> extract_used_keywords(['IF', '${cond}', 'Action A', 'arg1', 'ELSE IF', '${cond2}', 'Action B', 'ELSE', 'Action C'])
+    ['Action A', 'Action B', 'Action C']
+    >>> extract_used_keywords(['IF', '${cond}'])
+    []
+    >>> extract_used_keywords(['END'])
+    []
     """
     ret = []
     if len(tokens) == 0 or tokens[0].startswith('#') or tokens[0] in ['[Documentation]', '[Arguments]', '[Tags]', '[Return]', '[Timeout]', ':FOR']:
         return ret
     if tokens[0].lower() in ['\\', '', '[teardown]', '[template]', '[setup]', 'given', 'when', 'then', 'and'] or re.match(r'[@$&]\{[^\}]+\}.*', tokens[0].lower()):
         return extract_used_keywords(tokens[1:])
+    if tokens[0].lower() == 'if':
+        indexes = [2] + [i for i, v in enumerate(tokens) if v.lower() in ['else if', 'else']]
+        for i in range(len(indexes)-1):
+            ret.extend(extract_used_keywords(tokens[indexes[i]:indexes[i+1]]))
+        ret.extend(extract_used_keywords(tokens[indexes[-1]:]))
+        return ret
+    if tokens[0].lower() == 'end':
+        return ret
     if tokens[:2] == ['...', 'ELSE'] or tokens[:2] == ['...', 'AND']:
         return extract_used_keywords(tokens[2:])
     if tokens[:2] == ['...', 'ELSE IF']:
