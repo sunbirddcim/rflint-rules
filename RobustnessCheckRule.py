@@ -2,18 +2,53 @@ from rflint.common import SuiteRule, KeywordRule, WARNING, ERROR
 from rflint.parser import SettingTable, TestcaseTable
 import re
 
+
+def extract_checked_keyword_calls(statement):
+    if len(statement) <= 1:
+        return []
+
+    keyword = statement[1]
+    if keyword.lower() != 'if':
+        return [(keyword, list(statement[2:]))]
+
+    # Inline IF: IF <cond> <keyword> [args] [ELSE IF <cond> <keyword> [args]] [ELSE <keyword> [args]]
+    calls = []
+    i = 3
+    while i < len(statement):
+        token = statement[i]
+        lower = token.lower()
+
+        if lower == 'else if':
+            i += 2
+            continue
+        if lower == 'else':
+            i += 1
+            continue
+        if lower == 'end':
+            break
+
+        j = i + 1
+        while j < len(statement) and statement[j].lower() not in ['else if', 'else', 'end']:
+            j += 1
+
+        calls.append((token, list(statement[i + 1:j])))
+        i = j
+
+    return calls
+
 def check(self, obj, statement):
-    if len(statement) > 1:
-        if statement[1].lower() == 'unselect frame':
+    for keyword, args in extract_checked_keyword_calls(statement):
+        if keyword.lower() == 'unselect frame':
             self.report(obj, '`Unselect Frame` -> `[Teardown]    Unselect Frame`', statement.startline)
-        elif is_wait_until_keyword(statement):
-            if not any([token.startswith('timeout') for token in statement[2:]]):
+        elif is_wait_until_keyword([keyword]):
+            if not any([token.startswith('timeout') for token in args]):
                 self.report(obj, 'Missing timeout argument?', statement.startline)
-            if not any([token.startswith('error') for token in statement[2:]]):
+            if not any([token.startswith('error') for token in args]):
                 self.report(obj, 'Missing error argument?', statement.startline)
-        elif statement[1].lower() == 'sleep' and "reason=" not in statement[-1]:
+        elif keyword.lower() == 'sleep' and (len(args) == 0 or "reason=" not in args[-1]):
             self.report(obj, 'DO NOT USE SLEEP!', statement.startline)
-        xpath = [arg for arg in statement[2:] if arg.startswith('xpath')]
+
+        xpath = [arg for arg in args if arg.startswith('xpath')]
         if len(xpath) > 0:
             if re.search('@class=.*', xpath[0]):
                 self.report(obj, 'use contains(@class, ...)', statement.startline)

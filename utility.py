@@ -162,6 +162,10 @@ def extract_used_keywords(tokens):
     ['Action A', 'Action B', 'Action C']
     >>> extract_used_keywords(['IF', '${cond}'])
     []
+    >>> extract_used_keywords(['FOR', '${item}', 'IN', '@{items}'])
+    []
+    >>> extract_used_keywords(['FOR', '${item}', 'IN RANGE', '10'])
+    []
     >>> extract_used_keywords(['END'])
     []
     """
@@ -175,6 +179,8 @@ def extract_used_keywords(tokens):
         for i in range(len(indexes)-1):
             ret.extend(extract_used_keywords(tokens[indexes[i]:indexes[i+1]]))
         ret.extend(extract_used_keywords(tokens[indexes[-1]:]))
+        return ret
+    if tokens[0].lower() == 'for':
         return ret
     if tokens[0].lower() == 'end':
         return ret
