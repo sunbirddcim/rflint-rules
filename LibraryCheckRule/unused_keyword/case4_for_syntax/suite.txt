@@ -1,0 +1,23 @@
+*** Test Cases ***
+Loop Body Should Count Keyword Usage
+    FOR    ${item}    IN    first    second
+        Used In For Loop
+    END
+
+Keyword Loop Body Should Count Keyword Usage
+    Keyword With For Loop
+
+*** Keywords ***
+Keyword With For Loop
+    FOR    ${item}    IN RANGE    2
+        Used In Keyword For Loop
+    END
+
+Used In For Loop
+    No Operation
+
+Used In Keyword For Loop
+    No Operation
+
+Unused In File
+    No Operation
