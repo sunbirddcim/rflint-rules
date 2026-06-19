@@ -59,6 +59,20 @@ Wait Until Without Setting Timeout (Test)
     ${expected} =    Evaluate    '\\n'.join(${expected})
     Check File    wait_until_without_setting_timeout(test).txt    ${expected}
 
+Inline IF Robustness Checks (Keyword)
+    ${output} =    Run    rflint --ignore all --no-filenames --rulefile RobustnessCheckRule.py "RobustnessCheckRule/inline_if_robustness(keyword).txt"
+    Should Contain    ${output}    W: 3, 0: DO NOT USE SLEEP! (RobustnessCheck_Keyword)
+    Should Contain    ${output}    W: 4, 0: Missing timeout argument? (RobustnessCheck_Keyword)
+    Should Contain    ${output}    W: 4, 0: Missing error argument? (RobustnessCheck_Keyword)
+    Should Contain    ${output}    W: 4, 0: use contains(@class, ...) (RobustnessCheck_Keyword)
+
+Inline IF Robustness Checks (Test)
+    ${output} =    Run    rflint --ignore all --no-filenames --rulefile RobustnessCheckRule.py "RobustnessCheckRule/inline_if_robustness(test).txt"
+    Should Contain    ${output}    W: 3, 0: DO NOT USE SLEEP! (RobustnessCheck_Test)
+    Should Contain    ${output}    W: 4, 0: Missing timeout argument? (RobustnessCheck_Test)
+    Should Contain    ${output}    W: 4, 0: Missing error argument? (RobustnessCheck_Test)
+    Should Contain    ${output}    W: 4, 0: use contains(@class, ...) (RobustnessCheck_Test)
+
 Missing Wait Befor Action (Keyword)
     [Tags]    deprecated
     Check File    missing_wait_before_action(keyword).txt    W: 3, 0: Use keyword `ooo After Waiting` instead. (RobustnessCheck_Keyword)

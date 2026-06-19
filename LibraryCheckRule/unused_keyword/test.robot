@@ -17,6 +17,9 @@ Case 2
 Case 3
     Check File    case3_if_syntax/suite.txt    W: 21, 0: Unused Keyword (UnusedKeyword)
 
+Case 4
+    Check File    case4_for_syntax/suite.txt    W: 22, 0: Unused Keyword (UnusedKeyword)
+
 *** Keywords ***
 Check File
     [Arguments]    ${file}    ${message}

@@ -1,0 +1,4 @@
+*** Keywords ***
+Action
+    IF    ${True}    Sleep    1s
+    IF    ${True}    Wait Until Element Is Visible    xpath://div[@class='x']
