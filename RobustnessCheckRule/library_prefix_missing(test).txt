@@ -1,0 +1,7 @@
+*** Settings ***
+Test Teardown    Run Keywords    Delete All Cookies    AND    Close Browser
+
+*** Test Cases ***
+Bar
+    ${count} =    Get Element Count    //div
+    Go To    ${url}

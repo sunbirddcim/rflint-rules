@@ -1,0 +1,5 @@
+*** Keywords ***
+Foo
+    ${text} =    Get Text    //div
+    Press Keys    ${field}    ENTER
+    [Teardown]    Close Browser

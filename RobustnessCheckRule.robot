@@ -81,6 +81,24 @@ Missing Wait Befor Action (Test)
     [Tags]    deprecated
     Check File    missing_wait_before_action(test).txt    W: 3, 0: Use keyword `ooo After Waiting` instead. (RobustnessCheck_Test)
 
+Missing Library Prefix (Keyword)
+    ${expected} =    Create List    W: 3, 0: Call `Run Keyword\ \ \ \ \${Library}.Get Text` to force the SeleniumLibrary version (ambiguous with Browser library). (LibraryPrefixCheck_Keyword)
+    ...    W: 4, 0: Call `Run Keyword\ \ \ \ \${Library}.Press Keys` to force the SeleniumLibrary version (ambiguous with Browser library). (LibraryPrefixCheck_Keyword)
+    ...    W: 5, 0: Call `Run Keyword\ \ \ \ \${Library}.Close Browser` to force the SeleniumLibrary version (ambiguous with Browser library). (LibraryPrefixCheck_Keyword)
+    ${expected} =    Evaluate    '\\n'.join(${expected})
+    Check File    library_prefix_missing(keyword).txt    ${expected}
+
+Missing Library Prefix (Test)
+    ${expected} =    Create List    W: 2, 0: Call `Run Keyword\ \ \ \ \${Library}.Delete All Cookies` to force the SeleniumLibrary version (ambiguous with Browser library). (LibraryPrefixCheck_Test)
+    ...    W: 2, 0: Call `Run Keyword\ \ \ \ \${Library}.Close Browser` to force the SeleniumLibrary version (ambiguous with Browser library). (LibraryPrefixCheck_Test)
+    ...    W: 6, 0: Call `Run Keyword\ \ \ \ \${Library}.Get Element Count` to force the SeleniumLibrary version (ambiguous with Browser library). (LibraryPrefixCheck_Test)
+    ...    W: 7, 0: Call `Run Keyword\ \ \ \ \${Library}.Go To` to force the SeleniumLibrary version (ambiguous with Browser library). (LibraryPrefixCheck_Test)
+    ${expected} =    Evaluate    '\\n'.join(${expected})
+    Check File    library_prefix_missing(test).txt    ${expected}
+
+Library Prefix Correctly Used
+    Check File    library_prefix_ok.txt    ${EMPTY}
+
 *** Keywords ***
 Check File
     [Arguments]    ${file}    ${message}
