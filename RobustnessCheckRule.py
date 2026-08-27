@@ -1,6 +1,39 @@
 from rflint.common import SuiteRule, KeywordRule, WARNING, ERROR
 from rflint.parser import SettingTable, TestcaseTable
 import re
+import os
+import sys
+sys.path.append(os.path.dirname(__file__))
+from utility import extract_used_keywords
+
+
+# SeleniumLibrary keywords that also exist in the Playwright `Browser` library.
+# They must be called via `Run Keyword    ${Library}.<Keyword>` to force the
+# SeleniumLibrary version; a bare call is ambiguous and resolves by library
+# search order instead of intent.
+MUST_PREFIX_KEYWORDS = {
+    'closebrowser',
+    'deleteallcookies',
+    'draganddrop',
+    'getbrowserids',
+    'getelementcount',
+    'gettext',
+    'goto',
+    'presskeys',
+    'registerkeywordtorunonfailure',
+    'switchbrowser',
+    'waitforcondition',
+}
+
+
+def normalize_keyword_name(name):
+    return name.replace(' ', '').replace('_', '').lower()
+
+
+def check_missing_library_prefix(self, obj, tokens, line):
+    for used in extract_used_keywords(list(tokens)):
+        if normalize_keyword_name(used) in MUST_PREFIX_KEYWORDS:
+            self.report(obj, 'Call `Run Keyword    ${Library}.%s` to force the SeleniumLibrary version (ambiguous with Browser library).' % used, line)
 
 
 def extract_checked_keyword_calls(statement):
@@ -169,3 +202,28 @@ class RobustnessCheck_Keyword(KeywordRule):
         # check_missing_waiting(self, keyword, keyword.name, keyword.statements)
         for statement in keyword.statements:
             check(self, keyword, statement)
+
+
+class LibraryPrefixCheck_Keyword(KeywordRule):
+
+    severity = WARNING
+
+    def apply(self, keyword):
+        for statement in keyword.statements:
+            check_missing_library_prefix(self, keyword, statement, statement.startline)
+
+
+class LibraryPrefixCheck_Test(SuiteRule):
+
+    severity = WARNING
+
+    def apply(self, suite):
+        for table in suite.tables:
+            if isinstance(table, TestcaseTable):
+                for testcase in table.testcases:
+                    for statement in testcase.statements:
+                        check_missing_library_prefix(self, testcase, statement, statement.startline)
+            elif isinstance(table, SettingTable):
+                for statement in table.statements:
+                    if statement[0].lower() in ['test setup', 'test teardown', 'suite setup', 'suite teardown', 'test template']:
+                        check_missing_library_prefix(self, suite, statement[1:], statement.startline)
