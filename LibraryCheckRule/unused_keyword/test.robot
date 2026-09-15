@@ -20,6 +20,21 @@ Case 3
 Case 4
     Check File    case4_for_syntax/suite.txt    W: 22, 0: Unused Keyword (UnusedKeyword)
 
+Case 5
+    ${expected} =    Create List
+    ...    W: 2, 0: Unused Keyword (UnusedKeyword)
+    ...    W: 10, 0: Unused Keyword (UnusedKeyword)
+    ${expected} =    Evaluate    '\\n'.join(${expected})
+    Check File    case5_run_keyword_in_frame/suite.txt    ${expected}
+
+Case 6
+    ${expected} =    Create List
+    ...    W: 2, 0: Unused Keyword (UnusedKeyword)
+    ...    W: 18, 0: Unused Keyword (UnusedKeyword)
+    ...    W: 21, 0: Unused Keyword (UnusedKeyword)
+    ${expected} =    Evaluate    '\\n'.join(${expected})
+    Check File    case6_library_prefix/suite.txt    ${expected}
+
 *** Keywords ***
 Check File
     [Arguments]    ${file}    ${message}

@@ -33,7 +33,7 @@ def all_robot_files(path):
         p = PureWindowsPath(path)
     for root, _, files in os.walk(p.parents[0]):
         for f in files:
-            if f.endswith('.txt') or f.endswith('.robot'):
+            if f.endswith('.txt') or f.endswith('.robot') or f.endswith('.resource'):
                 ret.append(os.path.join(root, f))
     return ret
 
