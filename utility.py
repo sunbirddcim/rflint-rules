@@ -141,6 +141,20 @@ def extract_used_keywords(tokens):
     >>> extract_used_keywords(['', '[Timeout]', '1 min'])
     []
 
+    run keyword in frame
+    >>> extract_used_keywords(['Run Keyword In Frame', '${frame}', 'Action A'])
+    ['Run Keyword In Frame', 'Action A']
+    >>> extract_used_keywords(['Run Keyword In Frame', '${frame}', 'Action A', 'arg1', 'arg2'])
+    ['Run Keyword In Frame', 'Action A']
+
+    dynamic library prefix
+    >>> extract_used_keywords(['Run Keyword', '${libraryPrefix}::Input Text Field', '${field}', '${value}'])
+    ['Run Keyword', 'Browser::Input Text Field', 'Selenium::Input Text Field']
+    >>> extract_used_keywords(['Run Keyword', '${libraryPrefix}::Common::Wait Until Request Is Not Pending', '${frame}'])
+    ['Run Keyword', 'Browser::Common::Wait Until Request Is Not Pending', 'Selenium::Common::Wait Until Request Is Not Pending']
+    >>> extract_used_keywords(['Run Keyword In Frame', '${frame}', '${libraryPrefix}::Click Element After It Is Visible', '${locator}'])
+    ['Run Keyword In Frame', 'Browser::Click Element After It Is Visible', 'Selenium::Click Element After It Is Visible']
+
     run keywords
     >>> extract_used_keywords(['Run Keywords', 'Action A', 'Action B', 'Action C'])
     ['Run Keywords', 'Action A', 'Action B', 'Action C']
@@ -154,6 +168,12 @@ def extract_used_keywords(tokens):
     ['Run Keywords', 'Run Keyword If Test Passed', 'Action A', 'Run Keyword If Test Failed', 'Action B', 'Action C']
     >>> extract_used_keywords(['Run Keywords', 'Action A', '${arg}'])
     ['Run Keywords', 'Action A']
+
+    run keyword in frame
+    >>> extract_used_keywords(['Run Keyword In Frame', 'frame', 'Action A'])
+    ['Run Keyword In Frame', 'Action A']
+    >>> extract_used_keywords(['Run Keyword In Frame', 'frame', 'Action A', 'arg1', 'arg2'])
+    ['Run Keyword In Frame', 'Action A']
 
     robot framework if syntax
     >>> extract_used_keywords(['IF', '${cond}', 'Action A'])
@@ -172,6 +192,10 @@ def extract_used_keywords(tokens):
     ret = []
     if len(tokens) == 0 or tokens[0].startswith('#') or tokens[0] in ['[Documentation]', '[Arguments]', '[Tags]', '[Return]', '[Timeout]', ':FOR']:
         return ret
+    library_prefix_match = re.match(r'^[@$&]\{libraryPrefix\}::(.+)$', tokens[0], re.IGNORECASE)
+    if library_prefix_match:
+        keyword_name = library_prefix_match.group(1)
+        return ['Browser::%s' % keyword_name, 'Selenium::%s' % keyword_name]
     if tokens[0].lower() in ['\\', '', '[teardown]', '[template]', '[setup]', 'given', 'when', 'then', 'and'] or re.match(r'[@$&]\{[^\}]+\}.*', tokens[0].lower()):
         return extract_used_keywords(tokens[1:])
     if tokens[0].lower() == 'if':
@@ -210,6 +234,8 @@ def extract_used_keywords(tokens):
         ret.extend(extract_used_keywords(tokens[indexes[-1]:]))
     elif tokens[0].lower() in ['wait until keyword succeeds']:
         ret.extend(extract_used_keywords(tokens[3:]))
+    elif tokens[0].lower() in ['run keyword in frame']:
+        ret.extend(extract_used_keywords(tokens[2:]))
     elif tokens[0].lower() in ['run keywords']:
         if 'AND' in tokens:
             itokens = [i for i, v in enumerate(tokens) if v.lower() in ['run keywords', 'and']]
@@ -253,7 +279,7 @@ def all_robot_files(path):
         p = PureWindowsPath(path)
     for root, _, files in os.walk(p.parents[0]):
         for f in files:
-            if f.endswith('.txt') or f.endswith('.robot'):
+            if f.endswith('.txt') or f.endswith('.robot') or f.endswith('.resource'):
                 ret.append(os.path.join(root, f))
     return ret
 
