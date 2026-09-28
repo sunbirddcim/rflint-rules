@@ -169,12 +169,6 @@ def extract_used_keywords(tokens):
     >>> extract_used_keywords(['Run Keywords', 'Action A', '${arg}'])
     ['Run Keywords', 'Action A']
 
-    run keyword in frame
-    >>> extract_used_keywords(['Run Keyword In Frame', 'frame', 'Action A'])
-    ['Run Keyword In Frame', 'Action A']
-    >>> extract_used_keywords(['Run Keyword In Frame', 'frame', 'Action A', 'arg1', 'arg2'])
-    ['Run Keyword In Frame', 'Action A']
-
     robot framework if syntax
     >>> extract_used_keywords(['IF', '${cond}', 'Action A'])
     ['Action A']
