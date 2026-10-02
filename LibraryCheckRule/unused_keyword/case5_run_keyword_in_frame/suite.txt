@@ -1,0 +1,11 @@
+*** Keywords ***
+Common::Input Filter
+    [Arguments]    ${frame}    ${field}
+    Run Keyword In Frame    ${frame}    Input Filter Text    ${field}
+
+Input Filter Text
+    [Arguments]    ${field}
+    Log    ${field}
+
+Unused Action
+    Log    unused

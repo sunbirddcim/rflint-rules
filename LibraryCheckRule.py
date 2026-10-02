@@ -4,6 +4,7 @@ from rflint import RobotFactory, Keyword
 import platform
 from pathlib import PureWindowsPath, PurePosixPath
 import re
+import functools
 import os
 import sys
 sys.path.append(os.path.dirname(__file__))
@@ -33,7 +34,7 @@ def all_robot_files(path):
         p = PureWindowsPath(path)
     for root, _, files in os.walk(p.parents[0]):
         for f in files:
-            if f.endswith('.txt') or f.endswith('.robot'):
+            if f.endswith('.txt') or f.endswith('.robot') or f.endswith('.resource'):
                 ret.append(os.path.join(root, f))
     return ret
 
@@ -115,17 +116,41 @@ def same(keyword_def, keyword_use):
     True
     >>> same('Action', None)
     False
+    >>> same('Select Tree View Dropdown', '@{selectLocations}')
+    False
+    >>> same('Select Tree View Dropdown', '${keyword}')
+    False
     """
     try:
         if keyword_def != keyword_use and (keyword_def == None or keyword_use == None):
             return False
         ndef = normalize_name(keyword_def)
         nuse = normalize_name(keyword_use)
-        if ('{' in ndef and '}' in ndef) or ('{' in nuse and '}' in nuse):
-            return re.match("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(ndef)), nuse) != None or re.match("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(nuse)), ndef) != None
+        if ndef != nuse and (is_only_variable(ndef) or is_only_variable(nuse)):
+            return False
+        if has_variable(ndef) or has_variable(nuse):
+            return keyword_pattern(ndef).match(nuse) != None or keyword_pattern(nuse).match(ndef) != None
         return ndef == nuse
     except:
         raise Exception((keyword_def, keyword_use))
+
+
+def has_variable(normalized):
+    return '{' in normalized and '}' in normalized
+
+
+# A name made only of variables (e.g. `@{locations}` passed as an argument to Run Keywords)
+# cannot identify a keyword and would otherwise match every definition.
+_ONLY_VARIABLE = re.compile(r'^(?:[@$&%]\{[^}]*\})+$')
+
+
+def is_only_variable(normalized):
+    return _ONLY_VARIABLE.match(normalized) != None
+
+
+@functools.lru_cache(maxsize=None)
+def keyword_pattern(normalized):
+    return re.compile("^%s$" % re.sub(r'\\?[@$&]\\{[^\}]+\\}', r'.+', re.escape(normalized)))
 
 
 metas = None
@@ -186,18 +211,41 @@ class UnusedKeyword(GeneralRule):
         
         def find_unused_keywords_by_simple_compare():
             self.unused_keywords = []
+            used = set(self.used_keywords)
             for keyword in self.all_keywords:
-                if not(keyword.name in self.used_keywords):
+                if not(keyword.name in used):
                     self.unused_keywords.append(keyword.name)
 
         def find_unused_keywords_by_regular_compare():
+            # Equivalent to any(same(keyword, used)) but avoids O(defs x uses) regex building.
+            used_plain = set()
+            used_normalized = []
+            used_patterns = []
+            for key in self.used_keywords:
+                if key is None:
+                    continue
+                nuse = normalize_name(key)
+                if is_only_variable(nuse):
+                    continue
+                used_normalized.append(nuse)
+                if has_variable(nuse):
+                    used_patterns.append(keyword_pattern(nuse))
+                else:
+                    used_plain.add(nuse)
+
             compared_keywords = self.unused_keywords.copy()
             self.unused_keywords = []
             for keyword in compared_keywords:
-                for key in self.used_keywords:
-                    if not same(keyword, key):
-                        self.unused_keywords.append(keyword)
-                        break
+                ndef = normalize_name(keyword)
+                if ndef in used_plain:
+                    continue
+                if has_variable(ndef):
+                    pattern = keyword_pattern(ndef)
+                    if any(pattern.match(nuse) for nuse in used_normalized):
+                        continue
+                if any(pattern.match(ndef) for pattern in used_patterns):
+                    continue
+                self.unused_keywords.append(keyword)
 
         find_used_keywords()
         find_unused_keywords_by_simple_compare()
